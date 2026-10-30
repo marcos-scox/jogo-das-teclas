@@ -538,13 +538,25 @@ function showResult(s, r, reason, badge, prev){
 }
 
 /* ===================== BATALHA ===================== */
-const PHASE_SECONDS = 120, MAX_ERRORS = 5;
+const BASE_MAX_ERRORS = 5;
+const DIFFICULTIES = {
+  easy:{label:'Fácil', seconds:180, errorPenalty:0, correctBonus:0},
+  medium:{label:'Médio', seconds:120, errorPenalty:5, correctBonus:0},
+  hard:{label:'Difícil', seconds:60, errorPenalty:5, correctBonus:1}
+};
+const difficulty = () => DIFFICULTIES[G.difficulty] || DIFFICULTIES.easy;
+const maxErrors = () => BASE_MAX_ERRORS + (G.extraDefense ? 1 : 0);
+function calculatedTimeLeft(now=performance.now()){
+  const elapsed = Math.max(0, (now - G.phaseStart - G.pausedTotal) / 1000);
+  return G.phaseDuration - elapsed - G.timePenalty + G.timeBonus;
+}
 const cv = $('#g-canvas');
 const cx = cv.getContext('2d');
 const G = {
   running:false, raf:0, last:0, t:0, W:0, H:0, dpr:1,
+  difficulty:null, perfectPhases:0, extraDefense:false,
   state:'idle', idx:0, score:0, phaseStartScore:0, errors:0, streak:0,
-  timeLeft:PHASE_SECONDS, phaseStart:0, pausedAt:0, pausedTotal:0, lastSec:-1,
+  phaseDuration:180, timeLeft:180, timePenalty:0, timeBonus:0, phaseStart:0, pausedAt:0, pausedTotal:0, lastSec:-1,
   enemies:[], bullets:[], parts:[], stars:[], queue:[],
   shake:0, flash:0, recoil:0, muzzle:0, aim:0, aimDraw:0,
   countAt:0, countVal:0, charge:false, shipDead:false, lostReason:'',
@@ -575,7 +587,7 @@ function geo(){
   const end = px + 44;
   return {px, py:H/2, rows, top, laneH, colGap, start, end};
 }
-function frontX(k, g){ g = g || geo(); return g.start - (g.start - g.end) * (k / MAX_ERRORS); }
+function frontX(k, g){ g = g || geo(); return g.start - (g.start - g.end) * (k / maxErrors()); }
 function radius(e){
   const g = geo();
   return e.boss ? Math.min(G.H * 0.26, 74, G.W * 0.16) : Math.max(12, Math.min(22, g.laneH * 0.32));
@@ -595,12 +607,22 @@ function startGame(){
   show('game');
   placeTrap($('#g-box'));
   gResize();
-  startRun();
+  G.difficulty = null;
+  G.perfectPhases = 0; G.extraDefense = false;
+  G.idx = 0; G.score = 0; G.phaseStartScore = 0; G.errors = 0;
+  G.phaseDuration = DIFFICULTIES.easy.seconds; G.timeLeft = G.phaseDuration;
+  G.timePenalty = 0; G.timeBonus = 0;
+  G.enemies = []; G.bullets = []; G.parts = []; G.queue = [];
+  G.shipDead = false; G.charge = false; G.state = 'difficulty';
+  hud(); hudTime(); overlay('difficulty');
+  const first = $('#g-over button');
+  if(first) first.focus();
   gStartLoop();
 }
 
 function startRun(){
   G.score = 0; G.phaseStartScore = 0; G.runMisses = new Map(); G.newRecord = false;
+  G.perfectPhases = 0; G.extraDefense = false;
   enterPhase(0);
 }
 
@@ -610,7 +632,9 @@ function enterPhase(i){
   G.idx = i; G.errors = 0; G.streak = 0;
   G.charge = false; G.shipDead = false;
   G.enemies = []; G.bullets = []; G.parts = [];
-  G.shake = 0; G.flash = 0; G.timeLeft = PHASE_SECONDS; G.lastSec = -1;
+  G.shake = 0; G.flash = 0;
+  G.phaseDuration = difficulty().seconds; G.timeLeft = G.phaseDuration;
+  G.timePenalty = 0; G.timeBonus = 0; G.lastSec = -1;
   G.phaseStartScore = G.score;
   const len = Array.from(P.text).length;
   G.queue = [];
@@ -646,17 +670,25 @@ function gFill(){
 function gCorrect(){
   G.streak++;
   G.score += 10 * mult();
+  if(difficulty().correctBonus){
+    G.timeBonus += difficulty().correctBonus;
+    G.timeLeft = calculatedTimeLeft();
+    hudTime();
+  }
   gFire();
   hud();
 }
 function gWrong(){
   if(G.state !== 'play') return;
   G.errors++; G.streak = 0;
+  if(difficulty().errorPenalty) G.timePenalty += difficulty().errorPenalty;
   if(!reduced) G.shake = 0.35;
   G.flash = 1;
   Sfx.error();
-  hud();
-  if(G.errors >= MAX_ERRORS) gLose('reach');
+  G.timeLeft = calculatedTimeLeft();
+  hud(); hudTime();
+  if(G.timeLeft <= 0){ G.timeLeft = 0; gLose('time'); return; }
+  if(G.errors >= maxErrors()) gLose('reach');
 }
 
 function gFire(){
@@ -708,7 +740,7 @@ function mergeMisses(){
   G.typer.misses.forEach((v, k) => G.runMisses.set(k, (G.runMisses.get(k) || 0) + v));
 }
 
-function phaseActiveSecs(){ return Math.max(0.5, PHASE_SECONDS - G.timeLeft); }
+function phaseActiveSecs(){ return Math.max(0.5, (performance.now() - G.phaseStart - G.pausedTotal) / 1000); }
 
 function saveGame(phasesDone){
   const gd = Store.data.game;
@@ -743,12 +775,17 @@ function gResume(){
 
 function gClear(){
   G.state = 'clear';
+  const phaseDefenses = maxErrors();
+  const perfect = G.errors === 0;
+  if(perfect) G.perfectPhases++;
+  const earnedDefense = !G.extraDefense && G.perfectPhases >= 3;
+  if(earnedDefense) G.extraDefense = true;
   const left = Math.ceil(G.timeLeft);
-  const bonus = left * 10 + (MAX_ERRORS - G.errors) * 100;
+  const bonus = left * 10 + (phaseDefenses - G.errors) * 100;
   G.score += bonus;
   mergeMisses();
   const t = G.typer;
-  G.lastStats = {ppm:(t.correct / 5) / (phaseActiveSecs() / 60), acc:t.acc(), errors:G.errors, left, bonus};
+  G.lastStats = {ppm:(t.correct / 5) / (phaseActiveSecs() / 60), acc:t.acc(), errors:G.errors, maxErrors:phaseDefenses, left, bonus, perfect, perfectPhases:G.perfectPhases, earnedDefense};
   hud();
   Sfx.clear();
   const last = G.idx === PHASES.length - 1;
@@ -770,12 +807,21 @@ function gQuit(){
   clearTimers();
   gStopLoop();
   G.state = 'idle';
+  G.difficulty = null; G.perfectPhases = 0; G.extraDefense = false;
+  G.phaseDuration = DIFFICULTIES.easy.seconds; G.timeLeft = G.phaseDuration;
+  G.timePenalty = 0; G.timeBonus = 0;
   $('#g-over').hidden = true;
 }
 
 function gAct(a){
   Sfx.unlock();
-  if(a === 'go') beginCountdown();
+  if(a.startsWith('difficulty-')){
+    const selected = a.slice('difficulty-'.length);
+    if(G.state !== 'difficulty' || !DIFFICULTIES[selected]) return;
+    G.difficulty = selected;
+    startRun();
+  }
+  else if(a === 'go') beginCountdown();
   else if(a === 'next' && G.state === 'clear') enterPhase(G.idx + 1);
   else if(a === 'retry'){ G.score = G.phaseStartScore; enterPhase(G.idx); }
   else if(a === 'restart') startRun();
@@ -798,13 +844,19 @@ $('#g-frame').addEventListener('click', e => {
 
 function hud(){
   const P = PHASES[G.idx];
-  $('#h-phase').textContent = 'Fase ' + (G.idx + 1) + ' de ' + PHASES.length;
+  $('#h-phase').textContent = G.state === 'difficulty'
+    ? 'Escolha a dificuldade'
+    : 'Fase ' + (G.idx + 1) + ' de ' + PHASES.length + ' · ' + difficulty().label;
   $('#h-name').textContent = P.name;
-  const left = Math.max(0, MAX_ERRORS - G.errors);
+  const limit = maxErrors();
+  const left = Math.max(0, limit - G.errors);
   const def = $('#h-def');
   def.dataset.left = String(left);
-  def.setAttribute('aria-label', left + ' de ' + MAX_ERRORS + ' defesas restantes');
+  def.setAttribute('aria-label', left + ' de ' + limit + ' pontos de defesa restantes');
+  const pips = $('.pips', def);
+  if(pips.children.length !== limit) pips.innerHTML = Array.from({length:limit}, () => '<i></i>').join('');
   $$('#h-def .pips i').forEach((p, i) => p.classList.toggle('on', i < left));
+  $('.l', def).textContent = G.extraDefense ? 'Defesa +1' : 'Defesa';
   $('#h-score').textContent = fmt(G.score);
   const m = mult();
   const c = $('#h-combo');
@@ -815,7 +867,7 @@ function hudTime(){
   const s = Math.ceil(G.timeLeft);
   if(s !== G.lastSec){ G.lastSec = s; $('#h-time').textContent = mmss(s); }
   const bar = $('#h-bar');
-  bar.style.transform = 'scaleX(' + Math.max(0, G.timeLeft / PHASE_SECONDS) + ')';
+  bar.style.transform = 'scaleX(' + Math.min(1, Math.max(0, G.timeLeft / G.phaseDuration)) + ')';
   bar.classList.toggle('low', G.timeLeft < 20);
 }
 
@@ -823,9 +875,19 @@ function overlay(kind){
   const o = $('#g-over');
   const P = PHASES[G.idx], n = G.idx + 1, total = PHASES.length;
   let h = '<div class="ov-card" role="dialog" aria-live="polite">';
-  if(kind === 'intro'){
+  if(kind === 'difficulty'){
+    h += '<p class="ov-step">Antes de começar a campanha</p><h3>Escolha a dificuldade</h3><p>A escolha fica fixa nesta partida e só muda quando você voltar ao menu principal.</p>';
+    h += '<div class="difficulty-options">';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-easy"><strong>Fácil · 3 minutos</strong><span>Sem penalidade de tempo por erro.</span></button>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Cada erro desconta 5 segundos.</span></button>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-hard"><strong>Difícil · 1 minuto</strong><span>Erro: −5 s. Tecla certa: +1 s.</span></button>';
+    h += '</div><p class="ov-hint">Complete 3 fases sem erro (acumuladas, não precisam ser seguidas) para ganhar um ponto de defesa extra nas fases restantes.</p>';
+  }else if(kind === 'intro'){
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + '</p><h3>' + esc(P.name) + '</h3><p>' + esc(P.desc) + '</p>';
-    if(G.idx === 0) h += '<p>Cada tecla certa dispara um tiro e o texto só avança quando você acerta. Cada erro deixa os invasores uma linha mais perto: no 5º erro eles alcançam sua nave. Você tem <strong>2 minutos</strong> por fase.</p>';
+    const d = difficulty();
+    const rule = G.difficulty === 'medium' ? 'Cada erro desconta 5 segundos.' : G.difficulty === 'hard' ? 'Cada erro desconta 5 segundos e cada tecla certa acrescenta 1 segundo.' : 'Os erros não alteram o cronômetro.';
+    h += '<p>Dificuldade <strong>' + esc(d.label) + '</strong>: <strong>' + mmss(d.seconds) + '</strong> por fase. ' + rule + '</p>';
+    if(G.idx === 0) h += '<p>Cada tecla certa dispara um tiro e o texto só avança quando você acerta. Cada erro deixa os invasores uma linha mais perto; no ' + maxErrors() + 'º erro eles alcançam sua nave.</p>';
     else h += '<p>Pontuação até aqui: <strong>' + fmt(G.score) + '</strong>. Os erros voltam a zero nesta fase.</p>';
     h += '<div class="ov-actions"><button class="btn primary" type="button" data-g="go">Começar fase ' + n + '</button></div><p class="ov-hint">Ou pressione <kbd>Enter</kbd>.</p>';
   }else if(kind === 'pause'){
@@ -834,7 +896,10 @@ function overlay(kind){
   }else if(kind === 'clear'){
     const s = G.lastStats;
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + ' concluída</p><h3>' + esc(P.name) + ': caminho livre!</h3>';
-    h += '<dl class="ov-stats"><div><dt>PPM</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Erros</dt><dd>' + s.errors + ' de 5</dd></div><div><dt>Tempo sobrando</dt><dd>' + mmss(s.left) + '</dd></div><div><dt>Bônus</dt><dd>+' + fmt(s.bonus) + '</dd></div><div><dt>Pontos</dt><dd>' + fmt(G.score) + '</dd></div></dl>';
+    h += '<dl class="ov-stats"><div><dt>PPM</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Erros</dt><dd>' + s.errors + ' de ' + s.maxErrors + '</dd></div><div><dt>Tempo sobrando</dt><dd>' + mmss(s.left) + '</dd></div><div><dt>Bônus</dt><dd>+' + fmt(s.bonus) + '</dd></div><div><dt>Pontos</dt><dd>' + fmt(G.score) + '</dd></div></dl>';
+    if(s.earnedDefense) h += '<p><strong>Recompensa!</strong> Você ganhou 1 ponto de defesa extra nas fases restantes.</p>';
+    else if(G.extraDefense) h += '<p>Defesa extra ativa: você tem 6 pontos de defesa nas fases restantes.</p>';
+    else h += '<p>Fases sem erro acumuladas: ' + G.perfectPhases + ' de 3 para liberar defesa extra.</p>';
     h += '<p>Próxima: <strong>' + esc(PHASES[G.idx + 1].name) + '</strong>.</p>';
     h += '<div class="ov-actions"><button class="btn primary" type="button" data-g="next">Ir para a fase ' + (n + 1) + '</button><button class="btn" type="button" data-g="menu">Sair para o menu</button></div><p class="ov-hint">Ou pressione <kbd>Enter</kbd>.</p>';
   }else if(kind === 'lost'){
@@ -842,7 +907,7 @@ function overlay(kind){
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + '</p><h3>' + (G.lostReason === 'time' ? 'O tempo acabou' : 'Os invasores chegaram') + '</h3>';
     h += '<p>' + (G.lostReason === 'time'
       ? 'Faltaram ' + falta + ' caracteres. Você completou ' + pct + '% do texto.'
-      : 'Foram 5 erros nesta fase. Você completou ' + pct + '% do texto.') + '</p>';
+      : 'Foram ' + maxErrors() + ' erros nesta fase. Você completou ' + pct + '% do texto.') + '</p>';
     h += '<p>Pontuação: <strong>' + fmt(G.score) + '</strong>' + (G.newRecord ? ' (novo recorde!)' : '. Recorde: ' + fmt(Store.data.game.best)) + '</p>';
     h += '<div class="ov-keys"><h4>Teclas que mais travaram você</h4><div class="keyrow" id="ov-keys"></div></div>';
     h += '<div class="ov-actions"><button class="btn primary" type="button" data-g="retry">Tentar a fase ' + n + ' de novo</button>' + (G.idx > 0 ? '<button class="btn" type="button" data-g="restart">Recomeçar da fase 1</button>' : '') + '<button class="btn" type="button" data-g="menu">Menu inicial</button></div><p class="ov-hint"><kbd>Enter</kbd> tenta de novo.</p>';
@@ -897,7 +962,7 @@ function gUpdate(dt, now){
     }
   }
   if(G.state === 'play'){
-    G.timeLeft = PHASE_SECONDS - (now - G.phaseStart - G.pausedTotal) / 1000;
+    G.timeLeft = calculatedTimeLeft(now);
     if(G.typer.done && !G.queue.length && !G.enemies.length && !G.bullets.length){ gClear(); }
     else if(G.timeLeft <= 0){ G.timeLeft = 0; gLose('time'); }
     hudTime();
@@ -1096,14 +1161,14 @@ function gDraw(now){
   }
   c.globalAlpha = 1;
 
-  const zone = frontX(MAX_ERRORS, g);
+  const zone = frontX(maxErrors(), g);
   const zg = c.createLinearGradient(0, 0, zone + 30, 0);
   zg.addColorStop(0, 'rgba(255,70,100,.20)'); zg.addColorStop(1, 'rgba(255,70,100,0)');
   c.fillStyle = zg; c.fillRect(0, 0, zone + 30, H);
   c.setLineDash([4, 7]); c.lineWidth = 1;
-  for(let k = G.errors + 1; k <= MAX_ERRORS; k++){
+  for(let k = G.errors + 1; k <= maxErrors(); k++){
     const x = frontX(k, g);
-    c.strokeStyle = k === MAX_ERRORS ? 'rgba(255,92,120,.6)' : (k === G.errors + 1 ? 'rgba(255,192,72,.45)' : 'rgba(255,192,72,.18)');
+    c.strokeStyle = k === maxErrors() ? 'rgba(255,92,120,.6)' : (k === G.errors + 1 ? 'rgba(255,192,72,.45)' : 'rgba(255,192,72,.18)');
     c.beginPath(); c.moveTo(x, 8); c.lineTo(x, H - 8); c.stroke();
   }
   c.setLineDash([]);
