@@ -2,6 +2,10 @@
 
 Jogo de treino de digitação feito com HTML, CSS e JavaScript. O projeto foi organizado em pastas; a lógica e o visual do arquivo original foram preservados.
 
+## Acesse o jogo
+
+Jogue online em: [Jogo das Teclas](https://marcos-scox.github.io/jogo-das-teclas/).
+
 ## Como executar
 
 Abra o arquivo `index.html` em um navegador moderno. Não é necessário instalar dependências nem iniciar um servidor.
