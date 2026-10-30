@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Toque Certo: treino de digitação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <button class="logo" data-act="home" aria-label="Toque Certo, voltar ao início"><span class="mini" aria-hidden="true">T</span>Toque Certo</button>
+    <div class="toggles">
+      <button class="tgl" id="t-sound" type="button" aria-pressed="true">Som ligado</button>
+      <button class="tgl" id="t-acc" type="button" title="Com acentos opcionais, digitar “a” no lugar de “á” ou “c” no lugar de “ç” conta como acerto.">Acentos obrigatórios</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- INÍCIO -->
+    <section id="v-home" class="view">
+      <div class="hero">
+        <h1 class="caps" aria-label="Toque Certo">
+          <span class="word" aria-hidden="true"><span class="cap" data-k="t">T</span><span class="cap" data-k="o">O</span><span class="cap" data-k="q">Q</span><span class="cap" data-k="u">U</span><span class="cap" data-k="e">E</span></span>
+          <span class="word" aria-hidden="true"><span class="cap" data-k="c">C</span><span class="cap" data-k="e">E</span><span class="cap" data-k="r">R</span><span class="cap" data-k="t">T</span><span class="cap" data-k="o">O</span></span>
+        </h1>
+        <p class="lead">Treine sua digitação em português: textos sem pressa, provas contra o relógio e uma batalha em que cada tecla certa é um tiro.</p>
+      </div>
+      <div class="modes">
+        <button class="mode" type="button" data-mode="1">
+          <span class="legend" aria-hidden="true">1</span>
+          <span class="mode-t">Livre</span>
+          <span class="mode-d">Escolha um dos 10 textos e digite no seu ritmo. Sem limite de tempo.</span>
+          <span class="meta">Textos do fácil ao difícil</span>
+        </button>
+        <button class="mode" type="button" data-mode="2">
+          <span class="legend" aria-hidden="true">2</span>
+          <span class="mode-t">Contra o relógio</span>
+          <span class="mode-d">Você define o tempo e digita o máximo que conseguir com precisão.</span>
+          <span class="meta">10 textos, de 30 segundos a 10 minutos</span>
+        </button>
+        <button class="mode battle" type="button" data-mode="3">
+          <span class="legend" aria-hidden="true">3</span>
+          <svg viewBox="0 0 60 48" aria-hidden="true"><path d="M6 40 C2 20 14 4 30 4 C46 4 58 20 54 40 Q42 46 30 40 Q18 46 6 40Z" fill="currentColor" opacity=".9"/><circle cx="22" cy="22" r="6" fill="#fff"/><circle cx="38" cy="22" r="6" fill="#fff"/><circle cx="20" cy="22" r="3" fill="#14102B"/><circle cx="36" cy="22" r="3" fill="#14102B"/></svg>
+          <span class="mode-t">Batalha</span>
+          <span class="mode-d">5 fases de 2 minutos. Cada tecla certa dispara contra os invasores; cada erro os traz mais perto. Com 5 erros, ou se o tempo acabar, você perde.</span>
+          <span class="meta" id="battle-meta">5 fases e um chefão</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- LISTA DE TEXTOS -->
+    <section id="v-list" class="view" hidden>
+      <div class="bar"><button class="back" type="button" data-act="home">Voltar</button></div>
+      <h2 class="v-title" id="l-title">Modo livre</h2>
+      <p class="v-sub" id="l-sub"></p>
+      <div class="timepick" id="timepick" hidden>
+        <span class="tp-label" id="tp-label">Tempo da prova</span>
+        <div class="tp-opts" role="group" aria-labelledby="tp-label">
+          <button class="chip" type="button" data-sec="30">30 s</button>
+          <button class="chip" type="button" data-sec="60">1 min</button>
+          <button class="chip" type="button" data-sec="120">2 min</button>
+          <button class="chip" type="button" data-sec="180">3 min</button>
+          <button class="chip" type="button" data-sec="300">5 min</button>
+        </div>
+        <div class="tp-custom" id="tp-custom">
+          <label for="tp-min">Outro:</label>
+          <input id="tp-min" type="number" min="0" max="10" inputmode="numeric" aria-label="Minutos" placeholder="0"> min
+          <input id="tp-sec" type="number" min="0" max="59" inputmode="numeric" aria-label="Segundos" placeholder="0"> s
+        </div>
+        <p class="tp-note" id="tp-note"></p>
+      </div>
+      <ul class="tlist" id="tlist"></ul>
+    </section>
+
+    <!-- DIGITAÇÃO -->
+    <section id="v-type" class="view" hidden>
+      <div class="bar">
+        <button class="back" type="button" data-act="list">Trocar texto</button>
+        <button class="ghost" type="button" data-act="restart">Recomeçar</button>
+      </div>
+      <h2 class="v-title" id="ty-title"></h2>
+      <div class="stats">
+        <div><span>PPM</span><strong id="s-ppm">0</strong></div>
+        <div><span>Precisão</span><strong id="s-acc">100%</strong></div>
+        <div><span id="s-time-l">Tempo</span><strong id="s-time">0:00</strong></div>
+        <div><span id="s-prog-l">Progresso</span><strong id="s-prog">0%</strong></div>
+      </div>
+      <div class="tx-box" id="ty-box">
+        <div class="tx-view" id="ty-text"></div>
+        <div class="tx-blur">Clique aqui para continuar digitando</div>
+      </div>
+      <div class="progress"><i id="ty-bar"></i></div>
+      <p class="hint" id="ty-hint"></p>
+    </section>
+
+    <!-- RESULTADO -->
+    <section id="v-result" class="view" hidden>
+      <h2 class="v-title" id="r-title">Texto concluído</h2>
+      <p class="v-sub" id="r-sub"></p>
+      <div class="r-main">
+        <div class="r-ppm"><strong id="r-ppm">0</strong><span>palavras por minuto</span></div>
+        <dl class="r-grid">
+          <div><dt>Precisão</dt><dd id="r-acc"></dd></div>
+          <div><dt>Tempo</dt><dd id="r-time"></dd></div>
+          <div><dt>Teclas erradas</dt><dd id="r-wrong"></dd></div>
+          <div><dt>Caracteres certos</dt><dd id="r-chars"></dd></div>
+        </dl>
+      </div>
+      <p class="r-level" id="r-level"></p>
+      <div class="r-keys">
+        <h3>Teclas que mais travaram você</h3>
+        <div class="keyrow" id="r-keys"></div>
+      </div>
+      <p class="tip" id="r-tip"></p>
+      <div class="actions">
+        <button class="btn primary" type="button" data-act="repeat">Repetir texto</button>
+        <button class="btn" type="button" data-act="list">Escolher outro texto</button>
+        <button class="btn" type="button" data-act="home">Menu inicial</button>
+      </div>
+      <p class="hint"><kbd>Enter</kbd> repete o texto. PPM conta 5 caracteres certos como uma palavra.</p>
+    </section>
+
+    <!-- BATALHA -->
+    <section id="v-game" class="view" hidden>
+      <div class="bar">
+        <button class="back" type="button" data-act="quit">Sair da batalha</button>
+      </div>
+      <div class="g-frame" id="g-frame">
+        <div class="hud">
+          <div><span class="l" id="h-phase">Fase 1 de 5</span><strong id="h-name">Gosmas lunares</strong></div>
+          <div class="hud-def" id="h-def" data-left="5"><span class="l">Defesa</span><div class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+          <div><span class="l">Tempo</span><strong id="h-time">2:00</strong></div>
+          <div class="hud-score"><span class="l">Pontos</span><strong id="h-score">0</strong><em class="combo" id="h-combo">x1</em></div>
+        </div>
+        <div class="timebar"><i id="h-bar"></i></div>
+        <canvas id="g-canvas" aria-label="Campo de batalha: sua nave à esquerda, invasores à direita"></canvas>
+        <div class="tx-box" id="g-box">
+          <div class="tx-view" id="g-text"></div>
+          <div class="tx-blur"></div>
+        </div>
+        <div class="g-over" id="g-over" hidden></div>
+      </div>
+      <p class="hint"><kbd>Esc</kbd> pausa a fase. Cada tecla certa dispara; cada erro aproxima os invasores uma linha.</p>
+    </section>
+  </main>
+</div>
+<input id="trap" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Digite o texto aqui">
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>
