@@ -622,7 +622,6 @@ function startGame(){
 
 function startRun(){
   G.score = 0; G.phaseStartScore = 0; G.runMisses = new Map(); G.newRecord = false;
-  G.perfectPhases = 0; G.extraDefense = false;
   enterPhase(0);
 }
 
