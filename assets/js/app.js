@@ -149,7 +149,7 @@ class Typer{
   constructor(view, text, opts){
     this.view = view; this.opts = opts || {};
     this.chars = Array.from(text);
-    this.typed = []; this.pos = 0; this.correct = 0;
+    this.typed = []; this.inputLog = []; this.pos = 0; this.correct = 0;
     this.keys = 0; this.wrongKeys = 0; this.misses = new Map();
     this.started = false; this.done = false; this.t0 = 0; this.tEnd = 0;
     this.lastTop = -1; this.cur = null;
@@ -191,6 +191,7 @@ class Typer{
   rescroll(){ this.lastTop = -1; this.scroll(); }
   input(ch){
     if(this.done || this.pos >= this.chars.length) return;
+    if(this.opts.recordInputs) this.inputLog.push(ch);
     if(!this.started){ this.started = true; this.t0 = performance.now(); if(this.opts.onStart) this.opts.onStart(); }
     const exp = this.chars[this.pos];
     const ok = sameChar(ch, exp);
@@ -303,6 +304,7 @@ function goHome(){
   trap.blur();
   refreshHome();
   show('home');
+  Ranking.load(Ranking.difficulty);
 }
 
 function refreshHome(){
@@ -311,6 +313,77 @@ function refreshHome(){
     ? 'Recorde: ' + fmt(g.best) + ' pontos' + (g.phase >= 5 ? ', campanha vencida' : ', chegou até a fase ' + Math.min(5, g.phase + 1))
     : '5 fases e um chefão';
 }
+
+/* ===================== RANKING GLOBAL ===================== */
+const Ranking = {
+  config:window.TOQUE_SUPABASE || {},
+  session:null,
+  playerName:'',
+  queue:Promise.resolve(),
+  difficulty:'easy',
+  api(payload){
+    if(!this.config.url || !this.config.publishableKey) return Promise.reject(new Error('Ranking ainda não configurado.'));
+    const task = this.queue.then(async () => {
+      const r = await fetch(this.config.url + '/functions/v1/' + this.config.rankingFunction, {
+        method:'POST',
+        headers:{'apikey':this.config.publishableKey, 'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error(data.error || 'Falha ao validar a partida (' + r.status + ').');
+      return data;
+    });
+    this.queue = task.catch(() => {});
+    return task;
+  },
+  async start(difficulty, playerName, parent){
+    const payload = {action:'start', difficulty, playerName};
+    if(parent) Object.assign(payload, {parentRunId:parent.runId, parentToken:parent.token});
+    const data = await this.api(payload);
+    this.session = {runId:data.runId, token:data.token};
+    this.playerName = playerName;
+    return data;
+  },
+  async event(action){
+    if(!this.session) return;
+    return this.api({action, runId:this.session.runId, token:this.session.token});
+  },
+  async complete(phase, inputs, accentsOptional){
+    if(!this.session) return null;
+    return this.api({action:'complete-phase', runId:this.session.runId, token:this.session.token, phase, inputs, accentsOptional});
+  },
+  async load(difficulty){
+    this.difficulty = difficulty;
+    const status = $('#ranking-status'), list = $('#ranking-list');
+    status.textContent = 'Carregando ranking…';
+    list.innerHTML = '';
+    if(!this.config.url || !this.config.publishableKey){ status.textContent = 'Ranking indisponível: configuração Supabase ausente.'; return; }
+    const url = this.config.url + '/rest/v1/leaderboard_entries?select=player_name,score,difficulty,completed_at&difficulty=eq.' + encodeURIComponent(difficulty) + '&order=score.desc,completed_at.asc&limit=20';
+    try{
+      const r = await fetch(url, {headers:{'apikey':this.config.publishableKey}});
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      const rows = await r.json();
+      if(!rows.length){ status.textContent = 'Ainda não há campanhas concluídas neste nível. Seja o primeiro!'; return; }
+      status.textContent = 'Exibindo ' + rows.length + ' resultado' + (rows.length === 1 ? '' : 's') + ' — atualizado agora.';
+      list.innerHTML = rows.map((row, i) => {
+        const date = row.completed_at ? new Date(row.completed_at).toLocaleDateString('pt-BR') : '';
+        return '<li class="ranking-row rank-' + (i + 1) + '"><span class="ranking-position" aria-label="' + (i + 1) + 'º lugar">' + (i + 1) + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-score">' + fmt(row.score) + '</span></li>';
+      }).join('');
+    }catch(e){
+      status.textContent = 'Não foi possível carregar o ranking agora. Confira sua conexão e tente atualizar.';
+    }
+  }
+};
+$$('[data-ranking-difficulty]').forEach(button => button.addEventListener('click', () => {
+  const selected = button.dataset.rankingDifficulty;
+  $$('[data-ranking-difficulty]').forEach(tab => {
+    const active = tab === button;
+    tab.classList.toggle('active', active);
+    tab.setAttribute('aria-selected', String(active));
+  });
+  Ranking.load(selected);
+}));
+$('#ranking-refresh').addEventListener('click', () => Ranking.load(Ranking.difficulty));
 
 /* preferências */
 function syncToggles(){
@@ -560,7 +633,7 @@ const G = {
   enemies:[], bullets:[], parts:[], stars:[], queue:[],
   shake:0, flash:0, recoil:0, muzzle:0, aim:0, aimDraw:0,
   countAt:0, countVal:0, charge:false, shipDead:false, lostReason:'',
-  typer:null, runMisses:new Map(), newRecord:false, lastStats:null, timers:[]
+  typer:null, runMisses:new Map(), newRecord:false, lastStats:null, timers:[], rankStatus:'idle', rankError:''
 };
 
 function gResize(){
@@ -604,6 +677,7 @@ function later(fn, ms){ G.timers.push(setTimeout(fn, ms)); }
 
 function startGame(){
   stopTicker();
+  Ranking.session = null;
   show('game');
   placeTrap($('#g-box'));
   gResize();
@@ -614,6 +688,7 @@ function startGame(){
   G.timePenalty = 0; G.timeBonus = 0;
   G.enemies = []; G.bullets = []; G.parts = []; G.queue = [];
   G.shipDead = false; G.charge = false; G.state = 'difficulty';
+  G.rankStatus = 'awaiting'; G.rankError = '';
   hud(); hudTime(); overlay('difficulty');
   const first = $('#g-over button');
   if(first) first.focus();
@@ -639,7 +714,7 @@ function enterPhase(i){
   G.queue = [];
   if(P.enemy === 'boss') G.queue = [len];
   else { let left = len; while(left > 0){ const h = Math.min(P.hp, left); G.queue.push(h); left -= h; } }
-  G.typer = new Typer($('#g-text'), P.text, {strict:true, onCorrect:gCorrect, onWrong:gWrong});
+  G.typer = new Typer($('#g-text'), P.text, {strict:true, recordInputs:true, onCorrect:gCorrect, onWrong:gWrong});
   G.typer.merged = false;
   gFill();
   G.state = 'intro';
@@ -749,9 +824,15 @@ function saveGame(phasesDone){
   Store.save();
 }
 
-function beginCountdown(){
+async function beginCountdown(){
   if(G.state !== 'intro') return;
   $('#g-over').hidden = true;
+  G.state = 'starting-countdown';
+  if(Ranking.session){
+    try{ await Ranking.event('phase-begin'); }
+    catch(e){ Ranking.session = null; G.rankStatus = 'error'; G.rankError = e.message; }
+  }
+  if(G.state !== 'starting-countdown') return;
   G.state = 'count';
   G.countAt = performance.now();
   G.countVal = 4;
@@ -762,12 +843,14 @@ function gPause(){
   if(G.state !== 'play') return;
   G.state = 'pause';
   G.pausedAt = performance.now();
+  if(Ranking.session) Ranking.event('pause').catch(e => { Ranking.session = null; G.rankStatus = 'error'; G.rankError = e.message; });
   overlay('pause');
 }
 function gResume(){
   if(G.state !== 'pause') return;
   G.pausedTotal += performance.now() - G.pausedAt;
   G.state = 'play';
+  if(Ranking.session) Ranking.event('resume').catch(e => { Ranking.session = null; G.rankStatus = 'error'; G.rankError = e.message; });
   $('#g-over').hidden = true;
   focusTrap();
 }
@@ -775,6 +858,7 @@ function gResume(){
 function gClear(){
   G.state = 'clear';
   const phaseDefenses = maxErrors();
+  const hadExtraDefense = G.extraDefense;
   const perfect = G.errors === 0;
   if(perfect) G.perfectPhases++;
   const earnedDefense = !G.extraDefense && G.perfectPhases >= 3;
@@ -788,8 +872,36 @@ function gClear(){
   hud();
   Sfx.clear();
   const last = G.idx === PHASES.length - 1;
-  if(last) saveGame(5);
-  later(() => { if(G.state === 'clear' && view === 'game') overlay(last ? 'win' : 'clear'); }, 900);
+  const reveal = () => {
+    if(G.state !== 'clear' || view !== 'game') return;
+    if(last) saveGame(5);
+    later(() => { if(G.state === 'clear' && view === 'game') overlay(last ? 'win' : 'clear'); }, 900);
+  };
+  if(Ranking.session){
+    G.rankStatus = 'checking';
+    Ranking.complete(G.idx, G.typer.inputLog.join(''), !Store.data.prefs.accents).then(result => {
+      if(G.state !== 'clear' || view !== 'game') return;
+      G.score = result.score;
+      if(Number.isInteger(result.perfectPhases)) G.perfectPhases = result.perfectPhases;
+      if(typeof result.extraLife === 'boolean') G.extraDefense = result.extraLife;
+      if(Number.isInteger(result.phaseBonus)) G.lastStats.bonus = result.phaseBonus;
+      if(Number.isFinite(result.remainingSeconds)) G.lastStats.left = result.remainingSeconds;
+      G.lastStats.perfectPhases = G.perfectPhases;
+      G.lastStats.earnedDefense = !hadExtraDefense && G.extraDefense;
+      G.rankStatus = result.completed ? 'saved' : 'active';
+      G.rankError = '';
+      hud();
+      if(result.completed){
+        const tab = $$('[data-ranking-difficulty]').find(item => item.dataset.rankingDifficulty === G.difficulty);
+        if(tab) tab.click();
+        else Ranking.load(G.difficulty);
+      }
+    }).catch(error => {
+      G.rankStatus = 'error';
+      G.rankError = error.message;
+      Ranking.session = null;
+    }).finally(reveal);
+  }else reveal();
 }
 
 function gLose(reason){
@@ -805,6 +917,7 @@ function gLose(reason){
 function gQuit(){
   clearTimers();
   gStopLoop();
+  Ranking.session = null;
   G.state = 'idle';
   G.difficulty = null; G.perfectPhases = 0; G.extraDefense = false;
   G.phaseDuration = DIFFICULTIES.easy.seconds; G.timeLeft = G.phaseDuration;
@@ -812,18 +925,58 @@ function gQuit(){
   $('#g-over').hidden = true;
 }
 
-function gAct(a){
+async function gAct(a){
   Sfx.unlock();
   if(a.startsWith('difficulty-')){
     const selected = a.slice('difficulty-'.length);
     if(G.state !== 'difficulty' || !DIFFICULTIES[selected]) return;
+    const nameInput = $('#rank-player-name');
+    const name = nameInput ? nameInput.value.trim().replace(/\s+/gu, ' ') : '';
+    const error = $('#rank-name-error');
+    if(Array.from(name).length < 2 || Array.from(name).length > 24){
+      if(error) error.textContent = 'Digite um nome entre 2 e 24 caracteres para participar do ranking.';
+      if(nameInput) nameInput.focus();
+      return;
+    }
+    try{ localStorage.setItem('toque-certo:ranking-name', name); }catch(e){}
     G.difficulty = selected;
+    G.state = 'starting-session';
+    G.rankStatus = 'starting';
+    $$('#g-over [data-g^="difficulty-"]').forEach(button => { button.disabled = true; });
+    const nameStatus = $('#rank-name-help');
+    if(nameStatus) nameStatus.textContent = 'Preparando sua sessão segura…';
+    try{
+      await Ranking.start(selected, name);
+      if(G.state !== 'starting-session') return;
+      G.rankStatus = 'active';
+      G.rankError = '';
+    }catch(e){
+      if(G.state !== 'starting-session') return;
+      Ranking.session = null;
+      G.rankStatus = 'error';
+      G.rankError = e.message;
+    }
     startRun();
   }
   else if(a === 'go') beginCountdown();
   else if(a === 'next' && G.state === 'clear') enterPhase(G.idx + 1);
   else if(a === 'retry'){ G.score = G.phaseStartScore; enterPhase(G.idx); }
-  else if(a === 'restart') startRun();
+  else if(a === 'restart'){
+    if(G.difficulty && G.rankStatus !== 'error' && G.rankStatus !== 'unavailable'){
+      const parent = Ranking.session ? {runId:Ranking.session.runId, token:Ranking.session.token} : null;
+      const name = Ranking.playerName || (localStorage.getItem('toque-certo:ranking-name') || 'Jogador');
+      G.state = 'starting-session';
+      try{
+        await Ranking.start(G.difficulty, name, parent);
+        if(G.state !== 'starting-session') return;
+        G.rankStatus = 'active'; G.rankError = '';
+      }catch(e){
+        if(G.state !== 'starting-session') return;
+        Ranking.session = null; G.rankStatus = 'error'; G.rankError = e.message;
+      }
+    }
+    startRun();
+  }
   else if(a === 'resume') gResume();
   else if(a === 'menu') goHome();
 }
@@ -876,6 +1029,9 @@ function overlay(kind){
   let h = '<div class="ov-card" role="dialog" aria-live="polite">';
   if(kind === 'difficulty'){
     h += '<p class="ov-step">Antes de começar a campanha</p><h3>Escolha a dificuldade</h3><p>A escolha fica fixa nesta partida e só muda quando você voltar ao menu principal.</p>';
+    let savedName = '';
+    try{ savedName = localStorage.getItem('toque-certo:ranking-name') || ''; }catch(e){}
+    h += '<label class="rank-name-field" for="rank-player-name">Seu nome no ranking<input id="rank-player-name" type="text" maxlength="24" autocomplete="nickname" placeholder="Ex.: Ana" value="' + esc(savedName) + '"><span class="rank-name-help" id="rank-name-help">Será enviado automaticamente quando você vencer as 5 fases.</span></label><p class="rank-name-error" id="rank-name-error" aria-live="polite"></p>';
     h += '<div class="difficulty-options">';
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-easy"><strong>Fácil · 3 minutos</strong><span>Sem penalidade de tempo por erro.</span></button>';
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Cada erro desconta 5 segundos.</span></button>';
@@ -914,6 +1070,8 @@ function overlay(kind){
     const s = G.lastStats;
     h += '<p class="ov-step">5 de 5 fases</p><h3>Vitória! O Rei dos Erros caiu.</h3>';
     h += '<p>Pontuação final: <strong>' + fmt(G.score) + '</strong>' + (G.newRecord ? ' (novo recorde!)' : '. Recorde: ' + fmt(Store.data.game.best)) + '</p>';
+    if(G.rankStatus === 'saved') h += '<p class="rank-submit-status" role="status">Pontuação validada e enviada automaticamente ao Ranking Global em ' + esc(DIFFICULTIES[G.difficulty].label) + '.</p>';
+    else h += '<p class="rank-submit-status" role="status">A partida foi concluída, mas não entrou no ranking. ' + esc(G.rankError || 'A validação online não ficou disponível nesta partida.') + '</p>';
     h += '<dl class="ov-stats"><div><dt>PPM no chefão</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Bônus final</dt><dd>+' + fmt(s.bonus) + '</dd></div></dl>';
     h += '<div class="ov-keys"><h4>Teclas que mais travaram você na campanha</h4><div class="keyrow" id="ov-keys"></div></div>';
     h += '<div class="ov-actions"><button class="btn primary" type="button" data-g="restart">Jogar de novo</button><button class="btn" type="button" data-g="menu">Menu inicial</button></div>';
@@ -1294,4 +1452,5 @@ window.addEventListener('resize', () => {
 
 syncToggles();
 refreshHome();
+Ranking.load('easy');
 })();
