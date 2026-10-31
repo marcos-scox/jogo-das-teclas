@@ -3,20 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090d1b">
 <title>Toque Certo: treino de digitação</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/css/styles.css?v=2-redesign">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <button class="logo" data-act="home" aria-label="Toque Certo, voltar ao início"><span class="mini" aria-hidden="true">T</span>Toque Certo</button>
-    <div class="toggles">
-      <button class="tgl" id="t-sound" type="button" aria-pressed="true">Som ligado</button>
-      <button class="tgl" id="t-acc" type="button" title="Com acentos opcionais, digitar “a” no lugar de “á” ou “c” no lugar de “ç” conta como acerto.">Acentos obrigatórios</button>
-    </div>
+    <button class="logo" data-nav="home" aria-label="Toque Certo, voltar ao início"><span class="mini" aria-hidden="true">T</span><span>Toque Certo</span></button>
+    <nav class="primary-nav" aria-label="Navegação principal">
+      <button class="nav-link active" type="button" data-nav="home" aria-current="page">Início</button>
+      <button class="nav-link" type="button" data-nav="ranking">Ranking</button>
+      <button class="nav-link" type="button" data-nav="settings">Configurações</button>
+    </nav>
   </header>
 
   <main>
@@ -32,40 +34,29 @@
       <div class="modes">
         <button class="mode" type="button" data-mode="1">
           <span class="legend" aria-hidden="true">1</span>
+          <span class="mode-icon icon-free" aria-hidden="true"><span></span><span></span><span></span></span>
           <span class="mode-t">Livre</span>
           <span class="mode-d">Escolha um dos 10 textos e digite no seu ritmo. Sem limite de tempo.</span>
           <span class="meta">Textos do fácil ao difícil</span>
         </button>
         <button class="mode" type="button" data-mode="2">
           <span class="legend" aria-hidden="true">2</span>
+          <span class="mode-icon icon-clock" aria-hidden="true"><i></i></span>
           <span class="mode-t">Contra o relógio</span>
           <span class="mode-d">Você define o tempo e digita o máximo que conseguir com precisão.</span>
           <span class="meta">10 textos, de 30 segundos a 10 minutos</span>
         </button>
-        <div class="battle-slot">
-          <button class="mode battle" type="button" data-mode="3">
-            <span class="legend" aria-hidden="true">3</span>
-            <svg viewBox="0 0 60 48" aria-hidden="true"><path d="M6 40 C2 20 14 4 30 4 C46 4 58 20 54 40 Q42 46 30 40 Q18 46 6 40Z" fill="currentColor" opacity=".9"/><circle cx="22" cy="22" r="6" fill="#fff"/><circle cx="38" cy="22" r="6" fill="#fff"/><circle cx="20" cy="22" r="3" fill="#14102B"/><circle cx="36" cy="22" r="3" fill="#14102B"/></svg>
-            <span class="mode-t">Batalha</span>
-            <span class="mode-d">Escolha Fácil (3 min), Médio (2 min) ou Difícil (1 min). Cada tecla certa dispara; erros aproximam os invasores e descontam tempo nos modos Médio e Difícil.</span>
-            <span class="meta" id="battle-meta">5 fases e um chefão</span>
-          </button>
-          <aside class="hank-home" aria-label="Hank, mascote do jogo">
-            <svg class="hank-sprite" viewBox="0 0 90 100" role="img" aria-label="Gosma verde sorridente, Hank">
-              <path d="M13 78 C9 54 15 24 34 17 C51 9 73 22 77 48 C81 67 77 79 69 82 C59 87 51 79 45 82 C33 88 20 86 13 78Z" fill="#7EE081"/>
-              <ellipse cx="62" cy="32" rx="8" ry="4" transform="rotate(-28 62 32)" fill="rgba(255,255,255,.4)"/>
-              <ellipse cx="34" cy="49" rx="7" ry="9" fill="#fff"/><ellipse cx="51" cy="49" rx="7" ry="9" fill="#fff"/>
-              <circle cx="32" cy="49" r="3.5" fill="#14102B"/><circle cx="49" cy="49" r="3.5" fill="#14102B"/>
-              <path d="M31 67 Q43 75 55 67" fill="none" stroke="#317A45" stroke-width="3" stroke-linecap="round"/>
-            </svg>
-            <strong>Hank</strong>
-            <span>seu mascote</span>
-          </aside>
-        </div>
+        <button class="mode battle" type="button" data-mode="3">
+          <span class="legend" aria-hidden="true">3</span>
+          <span class="mode-icon icon-battle" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="mode-t">Batalha</span>
+          <span class="mode-d">Escolha Fácil (3 min), Médio (2 min) ou Difícil (1 min). Cada tecla certa dispara; erros aproximam os invasores e descontam tempo nos modos Médio e Difícil.</span>
+          <span class="meta" id="battle-meta">5 fases e um chefão</span>
+        </button>
       </div>
       <section class="global-ranking" aria-labelledby="ranking-title">
         <div class="ranking-heading">
-          <div><h2 id="ranking-title">Ranking Global</h2><p>Quem concluiu a campanha? Confira os melhores resultados por dificuldade.</p></div>
+          <div><span class="eyebrow">PLACAR DA COMUNIDADE</span><h2 id="ranking-title">Ranking Global</h2><p>As melhores campanhas em cada dificuldade.</p></div>
           <button class="ranking-refresh" id="ranking-refresh" type="button" aria-label="Atualizar ranking">Atualizar</button>
         </div>
         <div class="ranking-tabs" role="tablist" aria-label="Dificuldade do ranking">
@@ -75,6 +66,62 @@
         </div>
         <p class="ranking-status" id="ranking-status" role="status" aria-live="polite">Carregando ranking…</p>
         <ol class="ranking-list" id="ranking-list" aria-label="Classificação"></ol>
+        <button class="ranking-open" type="button" data-nav="ranking">Ver classificação completa <span aria-hidden="true">→</span></button>
+      </section>
+    </section>
+
+    <!-- RANKING COMPLETO -->
+    <section id="v-ranking" class="view" hidden>
+      <div class="page-intro">
+        <span class="eyebrow">PLACAR DA COMUNIDADE</span>
+        <h1 class="page-title">Ranking Global</h1>
+        <p class="page-copy">Confira todas as campanhas concluídas, ordenadas pela pontuação final.</p>
+      </div>
+      <section class="ranking-panel" aria-labelledby="full-ranking-title">
+        <div class="ranking-heading">
+          <div><h2 id="full-ranking-title">Classificação completa</h2><p>Resultados reais dos jogadores que venceram as cinco fases.</p></div>
+          <button class="ranking-refresh" id="leaderboard-refresh" type="button">Atualizar</button>
+        </div>
+        <div class="ranking-tabs" role="tablist" aria-label="Filtrar ranking por dificuldade">
+          <button class="ranking-tab easy active" type="button" role="tab" aria-selected="true" data-ranking-difficulty="easy"><i aria-hidden="true"></i>Fácil</button>
+          <button class="ranking-tab medium" type="button" role="tab" aria-selected="false" data-ranking-difficulty="medium"><i aria-hidden="true"></i>Médio</button>
+          <button class="ranking-tab hard" type="button" role="tab" aria-selected="false" data-ranking-difficulty="hard"><i aria-hidden="true"></i>Difícil</button>
+        </div>
+        <p class="ranking-status" id="leaderboard-status" role="status" aria-live="polite">Carregando classificação…</p>
+        <ol class="ranking-list full-ranking-list" id="leaderboard-list" aria-label="Classificação completa"></ol>
+        <button class="ranking-more" id="leaderboard-more" type="button" hidden>Carregar mais jogadores</button>
+      </section>
+    </section>
+
+    <!-- CONFIGURAÇÕES -->
+    <section id="v-settings" class="view" hidden>
+      <div class="page-intro">
+        <span class="eyebrow">PREFERÊNCIAS DO JOGO</span>
+        <h1 class="page-title">Configurações</h1>
+        <p class="page-copy">Ajuste o som e as regras de acentuação para treinar do seu jeito.</p>
+      </div>
+      <section class="settings-panel" aria-labelledby="preferences-title">
+        <div class="settings-section">
+          <span class="section-kicker">EXPERIÊNCIA</span>
+          <h2 id="preferences-title">Preferências</h2>
+          <div class="setting-row">
+            <div><strong>Som do jogo</strong><p>Efeitos de tecla, acerto e batalha.</p></div>
+            <button class="tgl setting-toggle" id="t-sound" type="button" aria-pressed="true">Som ligado</button>
+          </div>
+          <div class="setting-row">
+            <div><strong>Acentuação</strong><p>Escolha se acentos devem ser digitados exatamente.</p></div>
+            <button class="tgl setting-toggle" id="t-acc" type="button" title="Com acentos opcionais, digitar a no lugar de á ou c no lugar de ç conta como acerto.">Acentos obrigatórios</button>
+          </div>
+        </div>
+        <div class="settings-section about-section">
+          <span class="section-kicker">TOQUE CERTO</span>
+          <h2>Sobre o projeto</h2>
+          <p>Desenvolvido por <strong>Marcos Vinicius.</strong></p>
+          <div class="about-links">
+            <a href="https://github.com/marcos-scox" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+            <a href="https://github.com/marcos-scox/jogo-das-teclas" target="_blank" rel="noopener noreferrer">Repositório <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
       </section>
     </section>
 
@@ -177,6 +224,6 @@
 <input id="trap" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Digite o texto aqui">
 
 <script src="assets/js/supabase-config.js"></script>
-<script src="assets/js/app.js"></script>
+<script src="assets/js/app.js?v=4-redesign"></script>
 </body>
 </html>

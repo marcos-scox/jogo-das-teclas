@@ -6,6 +6,12 @@ Jogo de treino de digitação feito com HTML, CSS e JavaScript. O projeto foi or
 
 Jogue online em [Jogo das Teclas](https://marcos-scox.github.io/jogo-das-teclas/).
 
+## Interface
+
+A interface usa tema azul-marinho com detalhes roxos e se adapta a celular e computador. O menu mantém os modos Livre, Contra o relógio e Batalha; o Hank foi removido. Início mostra uma prévia com os cinco primeiros resultados por dificuldade, e a opção **Ranking** abre a classificação completa, carregada em páginas a partir dos dados reais do Supabase. Em **Configurações** ficam as preferências de som e acentuação e os créditos do projeto.
+
+Desenvolvido por Marcos Vinicius. [GitHub](https://github.com/marcos-scox) · [Repositório](https://github.com/marcos-scox/jogo-das-teclas).
+
 ## Como executar localmente
 
 Para que o ranking também funcione em desenvolvimento local, inicie um servidor HTTP na pasta do projeto:
@@ -18,7 +24,7 @@ Depois, abra <http://localhost:8787>. O jogo continua funcionando se `index.html
 
 ## Ranking Global
 
-Antes de escolher a dificuldade, informe o nome que aparecerá na classificação. Ao concluir as cinco fases, o resultado é enviado automaticamente para o ranking correspondente: Fácil, Médio ou Difícil. A página inicial mostra os 20 melhores de cada modalidade, ordenados por pontuação decrescente; em caso de empate, aparece primeiro quem concluiu antes.
+Antes de escolher a dificuldade, informe o nome que aparecerá na classificação. Ao concluir as cinco fases, o resultado é enviado automaticamente para o ranking correspondente: Fácil, Médio ou Difícil. A página inicial mostra os cinco melhores de cada modalidade; a tela Ranking permite percorrer a classificação completa, ordenada por pontuação decrescente. Em caso de empate, aparece primeiro quem concluiu antes.
 
 A pontuação é calculada no servidor a partir das teclas registradas, do texto oficial de cada fase, dos erros e do tempo medido pela sessão. O servidor só aceita a submissão depois da quinta fase e cada sessão pode gerar no máximo um registro. Uma partida abandonada ou que não foi validada não aparece no ranking. A tabela de resultados permite leitura pública, mas não aceita gravações diretas pelo navegador.
 

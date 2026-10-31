@@ -295,6 +295,13 @@ let view = 'home';
 function show(v){
   $$('.view').forEach(s => { s.hidden = s.id !== 'v-' + v; });
   view = v;
+  const activeNav = v === 'ranking' || v === 'settings' ? v : 'home';
+  $$('.nav-link').forEach(button => {
+    const active = button.dataset.nav === activeNav;
+    button.classList.toggle('active', active);
+    if(active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
   window.scrollTo(0, 0);
 }
 
@@ -304,7 +311,16 @@ function goHome(){
   trap.blur();
   refreshHome();
   show('home');
-  Ranking.load(Ranking.difficulty);
+  Ranking.loadPreview(Ranking.difficulty);
+}
+
+function navigateTo(target){
+  if(target === 'home'){ goHome(); return; }
+  stopTicker();
+  if(view === 'game') gQuit();
+  trap.blur();
+  show(target);
+  if(target === 'ranking') Ranking.loadFull(Ranking.difficulty, true);
 }
 
 function refreshHome(){
@@ -321,6 +337,12 @@ const Ranking = {
   playerName:'',
   queue:Promise.resolve(),
   difficulty:'easy',
+  previewRequest:0,
+  fullRequest:0,
+  fullRows:[],
+  fullCursor:null,
+  fullLoading:false,
+  pageSize:50,
   api(payload){
     if(!this.config.url || !this.config.publishableKey) return Promise.reject(new Error('Ranking ainda não configurado.'));
     const task = this.queue.then(async () => {
@@ -352,38 +374,102 @@ const Ranking = {
     if(!this.session) return null;
     return this.api({action:'complete-phase', runId:this.session.runId, token:this.session.token, phase, inputs, accentsOptional});
   },
-  async load(difficulty){
+  async fetchRows(difficulty, cursor, limit){
+    if(!this.config.url || !this.config.publishableKey) throw new Error('config');
+    const params = new URLSearchParams({
+      select:'id,player_name,score,difficulty,completed_at',
+      difficulty:'eq.' + difficulty,
+      order:'score.desc,completed_at.asc,id.asc',
+      limit:String(limit)
+    });
+    if(cursor){
+      const score = Number(cursor.score);
+      const completedAt = String(cursor.completed_at);
+      const id = String(cursor.id);
+      params.set('or', '(score.lt.' + score + ',and(score.eq.' + score + ',completed_at.gt.' + completedAt + '),and(score.eq.' + score + ',completed_at.eq.' + completedAt + ',id.gt.' + id + '))');
+    }
+    const url = this.config.url + '/rest/v1/leaderboard_entries?' + params.toString();
+    const r = await fetch(url, {headers:{'apikey':this.config.publishableKey}});
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  },
+  renderRows(rows, start=0){
+    return rows.map((row, i) => {
+      const position = start + i + 1;
+      const date = row.completed_at ? new Date(row.completed_at).toLocaleDateString('pt-BR') : '';
+      return '<li class="ranking-row rank-' + position + '"><span class="ranking-position" aria-label="' + position + 'º lugar">' + position + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-score">' + fmt(row.score) + '</span></li>';
+    }).join('');
+  },
+  select(difficulty){
+    if(!DIFFICULTIES[difficulty]) return;
     this.difficulty = difficulty;
+    $$('[data-ranking-difficulty]').forEach(tab => {
+      const active = tab.dataset.rankingDifficulty === difficulty;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+    });
+    this.loadPreview(difficulty);
+    if(view === 'ranking') this.loadFull(difficulty, true);
+  },
+  async loadPreview(difficulty){
+    this.difficulty = difficulty;
+    const request = ++this.previewRequest;
     const status = $('#ranking-status'), list = $('#ranking-list');
     status.textContent = 'Carregando ranking…';
     list.innerHTML = '';
-    if(!this.config.url || !this.config.publishableKey){ status.textContent = 'Ranking indisponível: configuração Supabase ausente.'; return; }
-    const url = this.config.url + '/rest/v1/leaderboard_entries?select=player_name,score,difficulty,completed_at&difficulty=eq.' + encodeURIComponent(difficulty) + '&order=score.desc,completed_at.asc&limit=20';
     try{
-      const r = await fetch(url, {headers:{'apikey':this.config.publishableKey}});
-      if(!r.ok) throw new Error('HTTP ' + r.status);
-      const rows = await r.json();
+      const rows = await this.fetchRows(difficulty, null, 5);
+      if(request !== this.previewRequest || difficulty !== this.difficulty) return;
       if(!rows.length){ status.textContent = 'Ainda não há campanhas concluídas neste nível. Seja o primeiro!'; return; }
-      status.textContent = 'Exibindo ' + rows.length + ' resultado' + (rows.length === 1 ? '' : 's') + ' — atualizado agora.';
-      list.innerHTML = rows.map((row, i) => {
-        const date = row.completed_at ? new Date(row.completed_at).toLocaleDateString('pt-BR') : '';
-        return '<li class="ranking-row rank-' + (i + 1) + '"><span class="ranking-position" aria-label="' + (i + 1) + 'º lugar">' + (i + 1) + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-score">' + fmt(row.score) + '</span></li>';
-      }).join('');
+      status.textContent = 'Exibindo as ' + rows.length + ' melhores campanhas.';
+      list.innerHTML = this.renderRows(rows);
     }catch(e){
-      status.textContent = 'Não foi possível carregar o ranking agora. Confira sua conexão e tente atualizar.';
+      if(request !== this.previewRequest) return;
+      status.textContent = e.message === 'config' ? 'Ranking indisponível: configuração Supabase ausente.' : 'Não foi possível carregar o ranking agora. Confira sua conexão e tente atualizar.';
+    }
+  },
+  async loadFull(difficulty, reset=false){
+    if(reset){
+      this.fullRows = [];
+      this.fullCursor = null;
+      this.fullRequest++;
+      this.fullLoading = false;
+      $('#leaderboard-list').innerHTML = '';
+    }
+    if(this.fullLoading) return;
+    const request = this.fullRequest;
+    const cursor = this.fullCursor;
+    const status = $('#leaderboard-status'), list = $('#leaderboard-list'), more = $('#leaderboard-more');
+    this.fullLoading = true;
+    status.textContent = cursor ? 'Carregando mais resultados…' : 'Carregando classificação…';
+    more.hidden = true;
+    more.disabled = true;
+    try{
+      const rows = await this.fetchRows(difficulty, cursor, this.pageSize);
+      if(request !== this.fullRequest || difficulty !== this.difficulty) return;
+      if(!cursor) this.fullRows = rows;
+      else this.fullRows = this.fullRows.concat(rows);
+      if(rows.length) this.fullCursor = rows[rows.length - 1];
+      list.innerHTML = this.renderRows(this.fullRows);
+      if(!this.fullRows.length) status.textContent = 'Ainda não há campanhas concluídas neste nível. Seja o primeiro!';
+      else if(rows.length === this.pageSize) status.textContent = 'Exibindo ' + this.fullRows.length + ' posições. Carregue mais para continuar a classificação.';
+      else status.textContent = 'Classificação completa: ' + this.fullRows.length + ' resultado' + (this.fullRows.length === 1 ? '' : 's') + '.';
+      more.hidden = rows.length !== this.pageSize;
+    }catch(e){
+      if(request !== this.fullRequest) return;
+      more.hidden = !this.fullCursor;
+      status.textContent = e.message === 'config' ? 'Ranking indisponível: configuração Supabase ausente.' : 'Não foi possível carregar a classificação agora. Confira sua conexão e tente atualizar.';
+    }finally{
+      if(request === this.fullRequest){ this.fullLoading = false; more.disabled = false; }
     }
   }
 };
 $$('[data-ranking-difficulty]').forEach(button => button.addEventListener('click', () => {
-  const selected = button.dataset.rankingDifficulty;
-  $$('[data-ranking-difficulty]').forEach(tab => {
-    const active = tab === button;
-    tab.classList.toggle('active', active);
-    tab.setAttribute('aria-selected', String(active));
-  });
-  Ranking.load(selected);
+  Ranking.select(button.dataset.rankingDifficulty);
 }));
-$('#ranking-refresh').addEventListener('click', () => Ranking.load(Ranking.difficulty));
+$('#ranking-refresh').addEventListener('click', () => Ranking.loadPreview(Ranking.difficulty));
+$('#leaderboard-refresh').addEventListener('click', () => Ranking.loadFull(Ranking.difficulty, true));
+$('#leaderboard-more').addEventListener('click', () => Ranking.loadFull(Ranking.difficulty));
 
 /* preferências */
 function syncToggles(){
@@ -391,7 +477,9 @@ function syncToggles(){
   const ts = $('#t-sound');
   ts.setAttribute('aria-pressed', String(!!p.sound));
   ts.textContent = p.sound ? 'Som ligado' : 'Som desligado';
-  $('#t-acc').textContent = p.accents ? 'Acentos obrigatórios' : 'Acentos opcionais';
+  const ta = $('#t-acc');
+  ta.setAttribute('aria-pressed', String(!!p.accents));
+  ta.textContent = p.accents ? 'Acentos obrigatórios' : 'Acentos opcionais';
 }
 $('#t-sound').addEventListener('click', () => { Store.data.prefs.sound = !Store.data.prefs.sound; Store.save(); syncToggles(); Sfx.unlock(); });
 $('#t-acc').addEventListener('click', () => { Store.data.prefs.accents = !Store.data.prefs.accents; Store.save(); syncToggles(); });
@@ -891,11 +979,7 @@ function gClear(){
       G.rankStatus = result.completed ? 'saved' : 'active';
       G.rankError = '';
       hud();
-      if(result.completed){
-        const tab = $$('[data-ranking-difficulty]').find(item => item.dataset.rankingDifficulty === G.difficulty);
-        if(tab) tab.click();
-        else Ranking.load(G.difficulty);
-      }
+      if(result.completed) Ranking.select(G.difficulty);
     }).catch(error => {
       G.rankStatus = 'error';
       G.rankError = error.message;
@@ -1426,6 +1510,8 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('click', e => {
+  const nav = e.target.closest('[data-nav]');
+  if(nav){ navigateTo(nav.dataset.nav); return; }
   const m = e.target.closest('[data-mode]');
   if(m){ openMode(+m.dataset.mode); return; }
   const a = e.target.closest('[data-act]');
@@ -1452,5 +1538,5 @@ window.addEventListener('resize', () => {
 
 syncToggles();
 refreshHome();
-Ranking.load('easy');
+Ranking.loadPreview('easy');
 })();
