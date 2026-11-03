@@ -551,7 +551,7 @@ $('#phase-modal').addEventListener('click', event => { if(event.target === $('#p
 const Online = {
   token:null, slot:0, state:null, poller:0, typer:null, started:false, finished:false,
   panel:$('#online-panel'),
-  async api(action, data={}){ return Ranking.api({action, ...data}); },
+  async api(action, data={}){ if(!Ranking.config.url || !Ranking.config.publishableKey) throw new Error('Ranking ainda não configurado.'); const r=await fetch(Ranking.config.url + '/functions/v1/online-duel',{method:'POST',headers:{'apikey':Ranking.config.publishableKey,'Content-Type':'application/json'},body:JSON.stringify({action,...data})}); const result=await r.json().catch(()=>({})); if(!r.ok) throw new Error(result.error || 'Não foi possível conectar ao duelo.'); return result; },
   stop(){ if(this.poller){ clearInterval(this.poller); this.poller=0; } if(this.typer) this.typer=null; this.started=false; this.finished=false; },
   open(){ this.stop(); this.token=null; this.slot=0; this.state=null; show('online'); this.renderLobby(); },
   renderLobby(message=''){
