@@ -51,20 +51,26 @@ const PHASES = [
 // Textos de missão por dificuldade. O modo difícil preserva integralmente os textos originais.
 const PHASE_TEXTS = {
   easy: [
-    'as naves cruzam o céu e a base aguarda a sua defesa',
-    'os morcegos voam baixo e você mantém o ritmo com calma',
-    'a frota avança enquanto seus dedos seguem leves e atentos',
-    'a equipe protege a cidade com coragem e precisão',
-    'o rei dos erros perde força quando você digita com calma'
-  ],
+    "as primeiras estrelas surgem no céu e iluminam as naves que se aproximam devagar da cidade enquanto os moradores fecham as janelas e procuram um lugar seguro\nvocê prepara a defesa com calma enquanto a equipe guia cada família até o abrigo e mantém as ruas livres para todos que ainda precisam de ajuda",
+    "os morcegos atravessam o vale em busca das luzes que brilham perto das casas e das pequenas lojas da praça\nvocê observa o voo deles com atenção e mantém os dedos leves enquanto ajuda os vizinhos a encontrar um caminho tranquilo para longe da confusão",
+    "a frota avança devagar entre as nuvens e reflete a luz azul do oceano que banha toda a costa\nseus dedos seguem firmes no teclado enquanto cada nave se afasta das pessoas que vivem perto do mar e esperam notícias da equipe",
+    "a equipe caminha unida pelas ruas para proteger a escola o parque e os jardins onde as crianças brincam\ncom coragem e precisão todos encontram um lugar tranquilo onde podem descansar juntos enquanto os guardas mantêm a entrada segura para cada família",
+    "o rei dos erros espalha medo pela cidade mas você continua confiante e lembra de tudo que aprendeu durante o treino\ncada palavra escrita com calma devolve a força para a equipe e ilumina o caminho de volta até as casas protegidas da cidade"
+  ] ,
   medium: [
-    'Alerta 1: as naves chegaram! Digite com atenção e proteja a base.',
-    'Fase 2 - Os morcegos voam a 80 km/h; mantenha o ritmo e não pare.',
-    'Drone 3 na área: energia em 75%. Mire, digite e avance!',
-    'Robôs na linha 4; restam 3 torres e 1 gerador. Proteja o portão!',
-    'Chefe final: Rei dos Erros. Use foco, precisão e coragem para vencer!'
-  ],
-  hard: PHASES.map(phase => phase.text)
+    "Alerta 1: as naves chegaram! A base precisa de ajuda agora. Avise a equipe e acenda os sinais de emergência.\nO painel mostra energia em 75%, escudos em 3 níveis e combustível para 12 minutos. Confira todos os dados antes de partir.\nO radar indica 18 invasores a 4 km; proteja o portão norte e acompanhe a rota A-7 pelo mapa.\nDigite cada instrução com atenção. Pressione Enter no fim deste parágrafo e prepare a defesa para o primeiro ataque!",
+    "Fase 2 - Os morcegos voam a 80 km/h; mantenha o ritmo e observe o radar. A equipe aguarda seu sinal.\nForam detectados 12 sinais nos setores B-2, C-4 e D-1; quatro deles seguem para a torre principal.\nConsulte o mapa (setor B-3), proteja a entrada número 2 e mantenha o farol aceso por 15 s.\nNão pare agora: cada tecla certa reduz o perigo em 10%. Avise os moradores e mantenha o caminho livre!",
+    "Drone 3 na área: energia em 75%. Mire com cuidado e avance! A central acompanha seus movimentos pelo radar.\nA frota atravessou o portão às 14:30; restam 6 unidades e o núcleo está marcado como alvo 04.\nConfira o painel: escudo +20%, motor em 2ª marcha e rota de saída C-9 desimpedida para a equipe.\nDigite com precisão; um erro custa 5 segundos. A equipe aguarda sua confirmação antes de fechar as portas!",
+    "Robôs na linha 4; restam 3 torres e 1 gerador funcionando. Mantenha a comunicação aberta com a central.\nO comandante calcula 4 tiros por robô, 2 rotas seguras e 40% de energia para a torre sul.\nMantenha os invasores a 50 m do portão e envie 2 técnicos para revisar o painel principal da base.\nAperte cada tecla com atenção! Proteja os moradores e mantenha a defesa ativa até receber o sinal verde.",
+    "Chefe final: Rei dos Erros. O alerta vermelho está ativo e o escudo caiu para 20%. A equipe precisa de você.\nO núcleo tem 100% de energia e 5 escudos para derrubar; o código de acesso é K-27.\nUse foco, precisão e coragem; o destino da base depende desta sequência: 3-1-4-2. Não troque nenhum sinal.\nConclua a missão em 3, 2, 1... comece! Confirme “vitória” no painel e salve a cidade inteira!"
+  ] ,
+  hard: [
+    "os invasores chegaram pela lua. cada tecla certa dispara um tiro. mantenha a calma, olhe para a tela e digite sem pressa para proteger a base.\nO radar detectou 18 naves no setor norte; a primeira linha de defesa está a 2 km do portão.\nAtive o escudo principal em 100%, confirme a rota A-7 e informe à equipe que a evacuação começou às 21:45.\nCada erro aproxima a frota. Releia o comando, preserve a energia e mantenha uma distância segura de 30 metros.\nSua missão termina quando a última nave recua. Digite com precisão, proteja a cidade e mantenha o canal 9 aberto!",
+    "Os morcegos digitais voam rápido e atacam em grupo. Respire fundo e mantenha os dedos na posição inicial. Cada palavra completa enfraquece o bando e deixa a base um pouco mais segura.\nO sistema registrou 24 criaturas no radar, distribuídas entre os setores B-2, C-4 e D-1; nenhuma rota está totalmente livre.\nFeche as janelas da torre, ajuste a frequência para 98.6 MHz e mantenha o farol aceso por 15 segundos.\nA equipe médica está no abrigo 3. Oriente os moradores pela saída leste, sem correr e sem deixar ninguém para trás.\nQuando o último sinal desaparecer, confirme “setor seguro” no painel e prepare a frota para a missão seguinte.",
+    "Alerta: uma frota de drones cruzou a barreira de energia! Eles são pequenos, mas resistentes, e só recuam diante de quem digita com precisão. Não tente correr demais; um erro agora custa caro. Concentre-se, siga o ritmo e derrube um por um.\nO sensor encontrou 36 unidades a 1.250 metros, voando a 72 km/h; o núcleo de comando está marcado como alvo 04.\nCalibre o radar em 360°, reduza a potência para 65% e escolha a sequência correta: 3-1-4-2.\nUm pulso eletromagnético será liberado às 16:08. Mantenha a equipe atrás da barreira e deixe a rota C-9 desimpedida.\nApós neutralizar o último drone, registre o código “VITÓRIA-5” e aguarde a confirmação da central antes de avançar.",
+    "Relatório da base: 12 torres ativas, 3 em manutenção e 1 gerador funcionando com 75% da carga. Os robôs blindados avançam em fila e exigem 4 tiros cada. Comandante, a decisão é sua: segure a posição, economize energia e não deixe que eles cheguem a menos de 50 metros do portão.\nA formação inimiga entrou pelo corredor 2 às 09:17; são 8 robôs, cada um com blindagem reforçada e sensor térmico.\nEnvie 2 técnicos ao painel, redirecione 40% da energia para a torre sul e mantenha o gerador abaixo de 90 °C.\nAs munições restantes são: 32 cargas de pulso, 14 baterias e 6 kits de reparo. Use os recursos na ordem indicada pelo mapa.\nQuando a última unidade cair, informe “PORTÃO LIVRE” pelo canal 7 e registre o total de energia preservada.",
+    "Atenção, último aviso: o Rei dos Erros despertou. Ele se alimenta de cada tecla trocada, de cada letra esquecida e de cada pressa sem sentido. Para vencê-lo, você vai precisar de foco total, mãos leves e olhos na tela. Lembre-se do treino: posição, ritmo e precisão. Se chegou até aqui, já provou que é capaz. Agora, termine o que começou!\nO núcleo do chefe atingiu 100% e abriu cinco escudos; cada escudo reage a uma sequência diferente de letras, números e sinais.\nO painel exibe o código final: K-27 / 4,8 / X! Confirme cada símbolo sem trocar a ordem e mantenha a respiração constante.\nA equipe aguarda no abrigo principal, enquanto o relógio marca 00:45. Não pressione teclas ao acaso: cada comando correto enfraquece o núcleo.\nFinalize a sequência, desligue o reator em segurança e transmita “MISSÃO CONCLUÍDA” para todas as torres da cidade!"
+  ]
 };
 function phaseFor(index){
   const phase = PHASES[index];
@@ -300,7 +306,7 @@ trap.addEventListener('input', e => { if(composing || e.isComposing) return; flu
 trap.addEventListener('keydown', e => {
   if(e.isComposing || composing) return;
   if(e.key === 'Backspace'){ e.preventDefault(); routeBack(e.ctrlKey || e.altKey || e.metaKey); }
-  else if(e.key === 'Enter'){ e.preventDefault(); }
+  else if(e.key === 'Enter'){ e.preventDefault(); if(view === 'game' && G.state === 'play') routeChar('\n'); }
 });
 trap.addEventListener('focus', () => $$('.tx-box').forEach(b => b.classList.remove('blurred')));
 trap.addEventListener('blur', () => {
@@ -1239,6 +1245,7 @@ function overlay(kind){
     h += '<p>Dificuldade <strong>' + esc(d.label) + '</strong>: <strong>' + mmss(d.seconds) + '</strong> por fase. ' + rule + '</p>';
     if(G.idx === 0) h += '<p>Cada tecla certa dispara um tiro e o texto só avança quando você acerta. Cada erro deixa os invasores uma linha mais perto; no ' + maxErrors() + 'º erro eles alcançam sua nave.</p>';
     else h += '<p>Pontuação até aqui: <strong>' + fmt(G.score) + '</strong>. Os erros voltam a zero nesta fase.</p>';
+    h += '<p>Ao chegar ao fim de cada parágrafo, pressione <kbd>Enter</kbd> para continuar.</p>';
     h += '<div class="ov-actions"><button class="btn primary" type="button" data-g="go">Começar fase ' + n + '</button></div><p class="ov-hint">Ou pressione <kbd>Enter</kbd>.</p>';
   }else if(kind === 'pause'){
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + '</p><h3>Jogo pausado</h3><p>O relógio parou. Os invasores esperam por você.</p>';

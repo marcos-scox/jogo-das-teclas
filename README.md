@@ -69,8 +69,8 @@ Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/g
 
 ## Dificuldades da batalha
 
-- **Fácil:** 3 minutos por fase, sem penalidade de tempo por erro. As cinco missões usam apenas letras, espaços e acentos, sem números ou pontuação.
-- **Médio:** 2 minutos por fase; cada erro desconta 5 segundos. As missões usam letras, acentos, números e sinais de pontuação.
-- **Difícil:** 1 minuto por fase; cada erro desconta 5 segundos e cada tecla correta acrescenta 1 segundo. Os textos originais desse nível foram mantidos.
+- **Fácil:** 3 minutos por fase, sem penalidade de tempo por erro. Cada missão tem 2 parágrafos e usa apenas letras, espaços e acentos, sem números ou pontuação. Pressione Enter ao fim de cada parágrafo.
+- **Médio:** 2 minutos por fase; cada erro desconta 5 segundos. Cada missão tem 4 parágrafos com letras, acentos, números e sinais de pontuação. Pressione Enter ao fim de cada parágrafo.
+- **Difícil:** 1 minuto por fase; cada erro desconta 5 segundos e cada tecla correta acrescenta 1 segundo. Cada missão tem 5 parágrafos; o texto original de cada fase foi mantido como abertura e ampliado. Pressione Enter ao fim de cada parágrafo.
 
 Após completar três fases sem erros (acumuladas, não necessariamente consecutivas), o jogador recebe um sexto ponto de defesa para as fases restantes daquela campanha. A dificuldade é escolhida antes de começar e permanece fixa até voltar ao menu principal.
