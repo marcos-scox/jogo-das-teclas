@@ -7,6 +7,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+const PHASE_NAMES = ["Gosmas lunares", "Morcegos digitais", "Frota de drones", "Robôs blindados", "O Rei dos Erros"];
 const PHASES = [
   "os invasores chegaram pela lua. cada tecla certa dispara um tiro. mantenha a calma, olhe para a tela e digite sem pressa para proteger a base.",
   "Os morcegos digitais voam rápido e atacam em grupo. Respire fundo e mantenha os dedos na posição inicial. Cada palavra completa enfraquece o bando e deixa a base um pouco mais segura.",
@@ -85,7 +86,7 @@ async function loadRun(id: unknown, rawToken: unknown) {
 }
 async function getEntry(runId: string) {
   const { data, error } = await admin.from("leaderboard_entries")
-    .select("id, player_name, score, difficulty, completed_at, active_seconds")
+    .select("id, player_name, score, difficulty, completed_at, active_seconds, total_ppm, phase_details")
     .eq("run_id", runId).maybeSingle();
   if (error) throw error;
   return data;
@@ -296,10 +297,22 @@ Deno.serve(async (req: Request) => {
   const campaignTimeBonus = isFinal ? Math.max(0, CAMPAIGN_TIME_BONUS_CAP - Math.floor(totalActiveSeconds * CAMPAIGN_TIME_BONUS_PER_SECOND)) : 0;
   const totalBonus = phaseBonus + campaignTimeBonus;
   const totalScore = Number(run.score || 0) + earnedPoints + totalBonus;
+  const completedChars = Number(run.correct_chars || 0) + correct;
+  const phaseDetails = [...(Array.isArray(run.phase_details) ? run.phase_details : []), {
+    phase: run.current_phase,
+    phase_name: PHASE_NAMES[run.current_phase],
+    ppm: Math.round(wordsPerMinute * 100) / 100,
+    accuracy: Math.round(accuracy * 10000) / 100,
+    active_seconds: activeSeconds,
+    points: earnedPoints + totalBonus,
+  }];
+  const campaignPpm = totalActiveSeconds > 0 ? Math.round((completedChars / 5) / (totalActiveSeconds / 60) * 100) / 100 : 0;
 
   const update = {
     score: totalScore,
     active_seconds: totalActiveSeconds,
+    phase_details: phaseDetails,
+    correct_chars: completedChars,
     perfect_phases: perfectPhases,
     extra_life: extraLife,
     current_phase: isFinal ? run.current_phase : run.current_phase + 1,
@@ -347,9 +360,11 @@ Deno.serve(async (req: Request) => {
     score: totalScore,
     difficulty: run.difficulty,
     active_seconds: totalActiveSeconds,
+    total_ppm: campaignPpm,
+    phase_details: phaseDetails,
     completed_at: new Date(now).toISOString(),
   }, { onConflict: "run_id", ignoreDuplicates: true });
   if (entryError) return fail(req, 500, "A campanha foi validada, mas não foi possível gravar no ranking.");
   const entry = await getEntry(run.id);
-  return response(req, { ok: true, completed: true, score: totalScore, phaseBonus, speedBonus, precisionBonus, campaignTimeBonus, totalBonus, phaseActiveSeconds: activeSeconds, totalActiveSeconds, remainingSeconds: Math.ceil(remaining), perfectPhases, extraLife, entry });
+  return response(req, { ok: true, completed: true, score: totalScore, totalPpm: campaignPpm, phaseDetails, phaseBonus, speedBonus, precisionBonus, campaignTimeBonus, totalBonus, phaseActiveSeconds: activeSeconds, totalActiveSeconds, remainingSeconds: Math.ceil(remaining), perfectPhases, extraLife, entry });
 });

@@ -450,3 +450,19 @@ button,a{-webkit-tap-highlight-color:transparent}
   .ranking-table-head{font-size:.58rem}
   .ranking-score,.ranking-time{font-size:.76rem}
 }
+
+/* ranking clicável e detalhes por fase */
+.ranking-table-head,.ranking-row{grid-template-columns:42px minmax(110px,1fr) minmax(62px,auto) minmax(78px,auto) minmax(72px,auto)}
+.ranking-table-head{display:grid;gap:12px;padding:0 14px 8px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.ranking-list li{min-width:0}
+.ranking-row{width:100%;text-align:left;color:var(--ink);font:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
+.ranking-row:hover{border-color:var(--accent);transform:translateY(-1px)}
+.ranking-ppm,.ranking-score,.ranking-time{font-family:var(--mono);font-size:.95rem;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.phase-modal{width:min(720px,calc(100% - 28px));max-height:min(86vh,850px);padding:24px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 80px #0009}
+.phase-modal::backdrop{background:#050713cc;backdrop-filter:blur(4px)}
+.phase-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.phase-modal-head h2{margin:3px 0;font-size:1.6rem}.phase-modal-head p{margin:0;color:var(--muted)}
+.phase-modal-close{padding:8px 12px;color:var(--ink);background:var(--key-top);border:1px solid var(--key-side);border-radius:9px;cursor:pointer}
+.phase-modal-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}
+.phase-modal-summary>div{padding:12px;background:var(--key-top);border:1px solid var(--line);border-radius:10px}.phase-modal-summary span{display:block;color:var(--muted);font-size:.8rem}.phase-modal-summary strong{display:block;font:700 1.25rem var(--mono);font-variant-numeric:tabular-nums}
+.phase-modal-list{display:grid;gap:10px;max-height:50vh;overflow:auto}.phase-detail{padding:14px;background:var(--surface-soft);border:1px solid var(--line);border-radius:11px}.phase-detail h3{margin:0 0 10px;font-size:1rem}.phase-detail p{margin:0;color:var(--muted);font-size:.9rem}.phase-detail dl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0}.phase-detail dt{color:var(--muted);font-size:.76rem}.phase-detail dd{margin:2px 0 0;font-weight:700;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.ranking-table-head,.ranking-row{grid-template-columns:30px minmax(80px,1fr) 45px 66px 55px;gap:6px;padding-left:8px;padding-right:8px}.ranking-table-head{font-size:.62rem}.ranking-ppm,.ranking-score,.ranking-time{font-size:.75rem}.ranking-player{font-size:.85rem}.ranking-date{font-size:.65rem}.phase-modal{padding:18px}.phase-modal-summary{gap:6px}.phase-modal-summary>div{padding:9px}.phase-modal-summary strong{font-size:1rem}.phase-detail dl{grid-template-columns:repeat(2,1fr)}}

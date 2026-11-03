@@ -387,7 +387,7 @@ const Ranking = {
   async fetchRows(difficulty, cursor, limit){
     if(!this.config.url || !this.config.publishableKey) throw new Error('config');
     const params = new URLSearchParams({
-      select:'id,player_name,score,difficulty,completed_at,active_seconds',
+      select:'id,player_name,score,difficulty,completed_at,active_seconds,total_ppm,phase_details',
       difficulty:'eq.' + difficulty,
       order:'score.desc,active_seconds.asc.nullslast,completed_at.asc,id.asc',
       limit:String(limit)
@@ -419,8 +419,10 @@ const Ranking = {
       const position = start + i + 1;
       const date = row.completed_at ? new Date(row.completed_at).toLocaleDateString('pt-BR') : '';
       const activeTime = formatActiveTime(row.active_seconds);
-      const label = position + 'º lugar, ' + row.player_name + ', ' + fmt(row.score) + ' pontos, tempo ativo ' + activeTime;
-      return '<li class="ranking-row rank-' + position + '" aria-label="' + esc(label) + '"><span class="ranking-position" aria-hidden="true">' + position + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-score" aria-label="' + fmt(row.score) + ' pontos">' + fmt(row.score) + '</span><span class="ranking-time" aria-label="Tempo ativo ' + esc(activeTime) + '">' + esc(activeTime) + '</span></li>';
+      const ppm = row.total_ppm !== null && row.total_ppm !== undefined && Number.isFinite(Number(row.total_ppm)) ? Math.round(Number(row.total_ppm)) : null;
+      const label = position + 'º lugar, ' + row.player_name + ', ' + (ppm === null ? 'PPM total indisponível' : ppm + ' PPM total') + ', ' + fmt(row.score) + ' pontos, tempo ' + activeTime + '. Abrir detalhes das fases.';
+      const details = esc(JSON.stringify(Array.isArray(row.phase_details) ? row.phase_details : []));
+      return '<li><button class="ranking-row rank-' + position + '" type="button" data-ranking-entry data-player="' + esc(row.player_name) + '" data-score="' + esc(row.score) + '" data-ppm="' + (ppm === null ? '' : ppm) + '" data-time="' + esc(activeTime) + '" data-phases="' + details + '" aria-label="' + esc(label) + '"><span class="ranking-position" aria-hidden="true">' + position + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-ppm" aria-label="' + (ppm === null ? 'PPM total indisponível' : ppm + ' palavras por minuto') + '">' + (ppm === null ? '—' : ppm) + '</span><span class="ranking-score" aria-label="' + fmt(row.score) + ' pontos">' + fmt(row.score) + '</span><span class="ranking-time" aria-label="Tempo ativo ' + esc(activeTime) + '">' + esc(activeTime) + '</span></button></li>';
     }).join('');
   },
   select(difficulty){
@@ -497,6 +499,22 @@ $$('[data-ranking-difficulty]').forEach(button => button.addEventListener('click
 $('#ranking-refresh').addEventListener('click', () => Ranking.loadPreview(Ranking.difficulty));
 $('#leaderboard-refresh').addEventListener('click', () => Ranking.loadFull(Ranking.difficulty, true));
 $('#leaderboard-more').addEventListener('click', () => Ranking.loadFull(Ranking.difficulty));
+function openRankingDetails(button){
+  const modal = $('#phase-modal');
+  const phases = JSON.parse(button.dataset.phases || '[]');
+  $('#phase-modal-player').textContent = button.dataset.player;
+  $('#phase-modal-summary').innerHTML = '<div><span>PPM total</span><strong>' + (button.dataset.ppm || '—') + '</strong></div><div><span>Pontos</span><strong>' + fmt(Number(button.dataset.score)) + '</strong></div><div><span>Tempo total</span><strong>' + esc(button.dataset.time || '—') + '</strong></div>';
+  const names = ['Gosmas lunares','Morcegos digitais','Frota de drones','Robôs blindados','O Rei dos Erros'];
+  $('#phase-modal-list').innerHTML = names.map((name, index) => {
+    const phase = phases.find(item => Number(item.phase) === index);
+    if(!phase) return '<article class="phase-detail unavailable"><h3>Fase ' + (index + 1) + ' · ' + name + '</h3><p>Detalhes não disponíveis para este registro.</p></article>';
+    return '<article class="phase-detail"><h3>Fase ' + (index + 1) + ' · ' + name + '</h3><dl><div><dt>PPM</dt><dd>' + Math.round(Number(phase.ppm) || 0) + '</dd></div><div><dt>Pontos ganhos</dt><dd>' + fmt(Number(phase.points) || 0) + '</dd></div><div><dt>Tempo</dt><dd>' + esc(formatActiveTime(phase.active_seconds)) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(Number(phase.accuracy) || 0) + '%</dd></div></dl></article>';
+  }).join('');
+  modal.showModal();
+}
+document.addEventListener('click', event => { const button = event.target.closest('[data-ranking-entry]'); if(button) openRankingDetails(button); });
+$('#phase-modal .phase-modal-close').addEventListener('click', () => $('#phase-modal').close());
+$('#phase-modal').addEventListener('click', event => { if(event.target === $('#phase-modal')) $('#phase-modal').close(); });
 
 /* preferências */
 function syncToggles(){
