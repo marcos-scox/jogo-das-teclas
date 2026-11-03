@@ -38,7 +38,11 @@ Deno.serve(async req => {
     const { data: room } = await db.from("online_rooms").select("*").eq("code", code).eq("status", "waiting").gt("expires_at", new Date().toISOString()).maybeSingle();
     if (!room) return fail(req, 404, "Sala não encontrada ou já iniciada.");
     const raw = token(); const p = await db.from("online_room_players").insert({ room_id: room.id, slot: 2, player_name: playerName, token_hash: await hash(raw) });
-    if (p.error) return fail(req, 409, "Essa sala já está cheia."); return out(req, { token: raw, slot: 2, state: await state(room) });
+    if (p.error) return fail(req, 409, "Essa sala já está cheia.");
+    const startAt = new Date(Date.now() + 3500).toISOString();
+    await db.from("online_rooms").update({ status: "countdown", started_at: startAt }).eq("id", room.id).eq("status", "waiting");
+    room = { ...room, status: "countdown", started_at: startAt };
+    return out(req, { token: raw, slot: 2, state: await state(room) });
   }
   const loaded = await load(body.code, body.token); if (!loaded) return fail(req, 403, "Sala inválida.");
   const { room, player } = loaded;
