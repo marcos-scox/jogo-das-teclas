@@ -19,6 +19,12 @@ const SETTINGS = {
   medium: { seconds: 120, errorPenalty: 5, correctBonus: 0 },
   hard: { seconds: 60, errorPenalty: 5, correctBonus: 1 },
 } as const;
+const SPEED_BONUS_PER_WPM = 10;
+const SPEED_BONUS_CAP = 1500;
+const PRECISION_BONUS_CAP = 1000;
+const CAMPAIGN_TIME_BONUS_CAP = 5000;
+const CAMPAIGN_TIME_BONUS_PER_SECOND = 4;
+const NETWORK_TIME_TOLERANCE_SECONDS = 1.5;
 type Difficulty = keyof typeof SETTINGS;
 
 const ALLOWED_ORIGINS = new Set([
@@ -79,7 +85,7 @@ async function loadRun(id: unknown, rawToken: unknown) {
 }
 async function getEntry(runId: string) {
   const { data, error } = await admin.from("leaderboard_entries")
-    .select("id, player_name, score, difficulty, completed_at")
+    .select("id, player_name, score, difficulty, completed_at, active_seconds")
     .eq("run_id", runId).maybeSingle();
   if (error) throw error;
   return data;
@@ -92,7 +98,9 @@ Deno.serve(async (req: Request) => {
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const parsed: unknown = await req.json();
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fail(req, 400, "JSON inválido.");
+    body = parsed as Record<string, unknown>;
   } catch {
     return fail(req, 400, "JSON inválido.");
   }
@@ -139,13 +147,16 @@ Deno.serve(async (req: Request) => {
 
   if (action === "phase-begin") {
     if (run.status !== "active") return fail(req, 409, "A sessão já foi concluída.");
+    if (run.paused_at) return fail(req, 409, "Retome ou encerre a fase pausada antes de iniciá-la novamente.");
+    if (run.phase_started_at) return response(req, { ok: true, phase: run.current_phase, alreadyStarted: true });
     // O cronômetro do jogo inicia após a contagem visual de 2,25 segundos.
     const startsAt = new Date(Date.now() + 2250).toISOString();
     const { data: started, error } = await admin.from("ranking_runs").update({
       phase_started_at: startsAt,
       paused_at: null,
       paused_seconds: 0,
-    }).eq("id", run.id).eq("status", "active").eq("current_phase", run.current_phase).select("id").maybeSingle();
+    }).eq("id", run.id).eq("status", "active").eq("current_phase", run.current_phase)
+      .is("phase_started_at", null).is("paused_at", null).select("id").maybeSingle();
     if (error) return fail(req, 500, "Não foi possível iniciar a validação da fase.");
     if (!started) return fail(req, 409, "A sessão mudou antes do início da fase.");
     return response(req, { ok: true, phase: run.current_phase });
@@ -171,11 +182,62 @@ Deno.serve(async (req: Request) => {
     return response(req, { ok: true });
   }
 
+  if (action === "phase-fail") {
+    if (run.status !== "active") return fail(req, 409, "A sessão já foi concluída.");
+    if (!run.phase_started_at) return response(req, { ok: true, activeSeconds: 0, totalActiveSeconds: Number(run.active_seconds || 0) });
+    if (!Number.isInteger(body.phase) || body.phase !== run.current_phase || run.current_phase < 0 || run.current_phase >= PHASES.length) {
+      return fail(req, 409, "A sequência de fases não corresponde à sessão.");
+    }
+    if (typeof body.inputs !== "string" || body.inputs.length > 12_000 || typeof body.accentsOptional !== "boolean") {
+      return fail(req, 400, "Trilha de teclas inválida.");
+    }
+    if (typeof body.activeSeconds !== "number" || !Number.isFinite(body.activeSeconds) || body.activeSeconds < 0) {
+      return fail(req, 400, "Duração ativa inválida.");
+    }
+    if (body.reason !== "time" && body.reason !== "reach" && body.reason !== "manual") return fail(req, 400, "Motivo de encerramento inválido.");
+    if (body.reason === "manual" && !run.paused_at) return fail(req, 400, "Pause a fase antes de recomeçá-la.");
+
+    const phaseText = Array.from(PHASES[run.current_phase]);
+    const typedKeys = Array.from(body.inputs);
+    if (typedKeys.length > phaseText.length * 6) return fail(req, 400, "Trilha de teclas excede o limite da fase.");
+    let position = 0;
+    let errors = 0;
+    let correct = 0;
+    for (const key of typedKeys) {
+      if (position >= phaseText.length) return fail(req, 400, "Há teclas registradas após o fim do texto.");
+      if (matches(key, phaseText[position], body.accentsOptional)) { position++; correct++; }
+      else errors++;
+    }
+
+    const now = Date.now();
+    const pausedSeconds = Number(run.paused_seconds || 0) + (run.paused_at ? Math.max(0, (now - Date.parse(run.paused_at)) / 1000) : 0);
+    const serverActiveSeconds = Math.max(0, (now - Date.parse(run.phase_started_at)) / 1000 - pausedSeconds);
+    const activeSeconds = Math.round(Math.max(serverActiveSeconds - NETWORK_TIME_TOLERANCE_SECONDS, Math.min(body.activeSeconds, serverActiveSeconds + NETWORK_TIME_TOLERANCE_SECONDS)) * 1000) / 1000;
+    const settings = SETTINGS[run.difficulty as Difficulty];
+    const remaining = settings.seconds - activeSeconds - errors * settings.errorPenalty + correct * settings.correctBonus;
+    const defenseLimit = 5 + (run.extra_life ? 1 : 0);
+    if (body.reason === "time" && remaining > 0.75) return fail(req, 400, "O tempo da fase ainda não terminou.");
+    if (body.reason === "reach" && errors < defenseLimit) return fail(req, 400, "Os pontos de defesa ainda não se esgotaram.");
+    if (position === phaseText.length) return fail(req, 400, "Uma fase concluída deve ser enviada para validação, não como tentativa perdida.");
+    const totalActiveSeconds = Math.round((Number(run.active_seconds || 0) + activeSeconds) * 1000) / 1000;
+    const updateAttempt = admin.from("ranking_runs").update({
+      active_seconds: totalActiveSeconds,
+      phase_started_at: null,
+      paused_at: null,
+      paused_seconds: 0,
+    }).eq("id", run.id).eq("status", "active").eq("current_phase", run.current_phase).eq("phase_started_at", run.phase_started_at);
+    const guardedAttempt = run.paused_at ? updateAttempt.eq("paused_at", run.paused_at) : updateAttempt.is("paused_at", null);
+    const { data: ended, error } = await guardedAttempt.select("id").maybeSingle();
+    if (error) return fail(req, 500, "Não foi possível salvar o tempo da tentativa.");
+    if (!ended) return fail(req, 409, "A tentativa já foi encerrada ou a sessão mudou.");
+    return response(req, { ok: true, activeSeconds, totalActiveSeconds });
+  }
+
   if (action !== "complete-phase") return fail(req, 400, "Ação desconhecida.");
 
   if (run.status === "completed") {
     const entry = await getEntry(run.id);
-    return response(req, { ok: true, completed: true, score: run.score, entry });
+    return response(req, { ok: true, completed: true, score: run.score, entry, totalActiveSeconds: entry?.active_seconds ?? Number(run.active_seconds || 0) });
   }
   if (!Number.isInteger(body.phase) || body.phase !== run.current_phase || run.current_phase < 0 || run.current_phase >= PHASES.length) {
     return fail(req, 409, "A sequência de fases não corresponde à sessão.");
@@ -183,6 +245,9 @@ Deno.serve(async (req: Request) => {
   if (!run.phase_started_at || run.paused_at) return fail(req, 409, "A fase não foi iniciada ou ainda está pausada.");
   if (typeof body.inputs !== "string" || body.inputs.length > 12_000) return fail(req, 400, "Trilha de teclas inválida.");
   if (typeof body.accentsOptional !== "boolean") return fail(req, 400, "Preferência de acentos inválida.");
+  if (typeof body.activeSeconds !== "number" || !Number.isFinite(body.activeSeconds) || body.activeSeconds < 0) {
+    return fail(req, 400, "Duração ativa inválida.");
+  }
 
   const phaseText = Array.from(PHASES[run.current_phase]);
   const typedKeys = Array.from(body.inputs);
@@ -210,7 +275,8 @@ Deno.serve(async (req: Request) => {
   if (errors >= defenseLimit) return fail(req, 400, "A fase excedeu os pontos de defesa disponíveis.");
 
   const now = Date.now();
-  const activeSeconds = Math.max(0, (now - Date.parse(run.phase_started_at)) / 1000 - Number(run.paused_seconds || 0));
+  const serverActiveSeconds = Math.max(0, (now - Date.parse(run.phase_started_at)) / 1000 - Number(run.paused_seconds || 0));
+  const activeSeconds = Math.round(Math.max(serverActiveSeconds - NETWORK_TIME_TOLERANCE_SECONDS, Math.min(body.activeSeconds, serverActiveSeconds + NETWORK_TIME_TOLERANCE_SECONDS)) * 1000) / 1000;
   // Rejeita conclusões em velocidade incompatível até com digitação muito rápida.
   const minimumSeconds = Math.max(3, typedKeys.length * 0.05);
   if (activeSeconds + 0.25 < minimumSeconds) return fail(req, 400, "A conclusão foi rápida demais para validar a trilha de teclas.");
@@ -218,14 +284,22 @@ Deno.serve(async (req: Request) => {
   const settings = SETTINGS[run.difficulty as Difficulty];
   const remaining = settings.seconds - activeSeconds - errors * settings.errorPenalty + correct * settings.correctBonus;
   if (remaining <= 0) return fail(req, 400, "O tempo da fase se esgotou antes da conclusão.");
+  const wordsPerMinute = (correct / 5) / (activeSeconds / 60);
+  const accuracy = typedKeys.length ? correct / typedKeys.length : 0;
+  const speedBonus = Math.min(SPEED_BONUS_CAP, Math.round(wordsPerMinute * SPEED_BONUS_PER_WPM));
+  const precisionBonus = Math.round(accuracy * PRECISION_BONUS_CAP);
+  const totalActiveSeconds = Math.round((Number(run.active_seconds || 0) + activeSeconds) * 1000) / 1000;
   const perfectPhases = Number(run.perfect_phases || 0) + (errors === 0 ? 1 : 0);
   const extraLife = Boolean(run.extra_life) || perfectPhases >= 3;
-  const phaseBonus = Math.ceil(remaining) * 10 + (defenseLimit - errors) * 100;
-  const totalScore = Number(run.score || 0) + earnedPoints + phaseBonus;
+  const phaseBonus = Math.ceil(remaining) * 10 + (defenseLimit - errors) * 100 + speedBonus + precisionBonus;
   const isFinal = run.current_phase === PHASES.length - 1;
+  const campaignTimeBonus = isFinal ? Math.max(0, CAMPAIGN_TIME_BONUS_CAP - Math.floor(totalActiveSeconds * CAMPAIGN_TIME_BONUS_PER_SECOND)) : 0;
+  const totalBonus = phaseBonus + campaignTimeBonus;
+  const totalScore = Number(run.score || 0) + earnedPoints + totalBonus;
 
   const update = {
     score: totalScore,
+    active_seconds: totalActiveSeconds,
     perfect_phases: perfectPhases,
     extra_life: extraLife,
     current_phase: isFinal ? run.current_phase : run.current_phase + 1,
@@ -240,11 +314,11 @@ Deno.serve(async (req: Request) => {
     .eq("phase_started_at", run.phase_started_at).select("id").maybeSingle();
   if (updateError) return fail(req, 500, "Não foi possível salvar a validação da fase.");
   if (!updated) {
-    const { data: latest } = await admin.from("ranking_runs").select("current_phase, score, status")
+    const { data: latest } = await admin.from("ranking_runs").select("current_phase, score, status, active_seconds")
       .eq("id", run.id).maybeSingle();
     if (latest && (latest.current_phase > run.current_phase || latest.status === "completed")) {
       const entry = latest.status === "completed" ? await getEntry(run.id) : null;
-      return response(req, { ok: true, completed: latest.status === "completed", score: latest.score, entry });
+      return response(req, { ok: true, completed: latest.status === "completed", score: latest.score, entry, totalActiveSeconds: latest.active_seconds });
     }
     return fail(req, 409, "A fase já foi recebida ou a sessão mudou. Atualize o ranking ao concluir.");
   }
@@ -255,6 +329,12 @@ Deno.serve(async (req: Request) => {
     phase: run.current_phase,
     score: totalScore,
     phaseBonus,
+    speedBonus,
+    precisionBonus,
+    campaignTimeBonus,
+    totalBonus,
+    phaseActiveSeconds: activeSeconds,
+    totalActiveSeconds,
     remainingSeconds: Math.ceil(remaining),
     perfectPhases,
     extraLife,
@@ -266,9 +346,10 @@ Deno.serve(async (req: Request) => {
     player_name: run.player_name,
     score: totalScore,
     difficulty: run.difficulty,
+    active_seconds: totalActiveSeconds,
     completed_at: new Date(now).toISOString(),
   }, { onConflict: "run_id", ignoreDuplicates: true });
   if (entryError) return fail(req, 500, "A campanha foi validada, mas não foi possível gravar no ranking.");
   const entry = await getEntry(run.id);
-  return response(req, { ok: true, completed: true, score: totalScore, phaseBonus, remainingSeconds: Math.ceil(remaining), perfectPhases, extraLife, entry });
+  return response(req, { ok: true, completed: true, score: totalScore, phaseBonus, speedBonus, precisionBonus, campaignTimeBonus, totalBonus, phaseActiveSeconds: activeSeconds, totalActiveSeconds, remainingSeconds: Math.ceil(remaining), perfectPhases, extraLife, entry });
 });

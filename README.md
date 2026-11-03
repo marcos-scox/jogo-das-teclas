@@ -24,9 +24,11 @@ Depois, abra <http://localhost:8787>. O jogo continua funcionando se `index.html
 
 ## Ranking Global
 
-Antes de escolher a dificuldade, informe o nome que aparecerá na classificação. Ao concluir as cinco fases, o resultado é enviado automaticamente para o ranking correspondente: Fácil, Médio ou Difícil. A página inicial mostra os cinco melhores de cada modalidade; a tela Ranking permite percorrer a classificação completa, ordenada por pontuação decrescente. Em caso de empate, aparece primeiro quem concluiu antes.
+Antes de escolher a dificuldade, informe o nome que aparecerá na classificação. Ao concluir as cinco fases, o resultado é enviado automaticamente para o ranking correspondente: Fácil, Médio ou Difícil. A página inicial mostra os cinco melhores de cada modalidade; a tela Ranking permite percorrer a classificação completa, ordenada por pontuação decrescente, depois menor tempo ativo e, por fim, data de conclusão.
 
-A pontuação é calculada no servidor a partir das teclas registradas, do texto oficial de cada fase, dos erros e do tempo medido pela sessão. O servidor só aceita a submissão depois da quinta fase e cada sessão pode gerar no máximo um registro. Uma partida abandonada ou que não foi validada não aparece no ranking. A tabela de resultados permite leitura pública, mas não aceita gravações diretas pelo navegador.
+A pontuação é calculada no servidor a partir das teclas registradas, do texto oficial de cada fase, dos erros e do tempo ativo validado. Além dos pontos por acerto, há bônus de velocidade (PPM × 10, limitado a 1.500 por fase), precisão (até 1.000 por fase), tempo restante e defesas preservadas. Na conclusão da campanha, há também um bônus de tempo de até 5.000 pontos, reduzido em 4 pontos por segundo ativo acumulado. Assim, fases mais rápidas, menos erros e menos tentativas elevam a pontuação; o servidor recalcula os valores, sem confiar cegamente nos enviados pelo navegador. Só aceita a submissão depois da quinta fase e cada sessão pode gerar no máximo um registro. Uma partida abandonada ou que não foi validada não aparece no ranking. A tabela de resultados permite leitura pública, mas não aceita gravações diretas pelo navegador.
+
+O tempo ativo exibido no ranking soma todas as fases e tentativas da campanha, inclusive tentativas que terminaram em derrota. O cronômetro monotônico do jogo só corre durante a fase jogável: menus, pausas, contagem regressiva e telas entre fases ficam de fora. Ao repetir uma fase, o limite regressivo da dificuldade reinicia, mas o tempo ativo total continua acumulado. Para impedir que um cliente modificado envie tempos arbitrariamente curtos, o servidor compara a duração reportada com seus próprios timestamps e limita a diferença por tentativa a 1,5 segundo; redes excepcionalmente lentas podem deixar uma pequena diferença residual. Registros anteriores à implantação dessa medição aparecem com “—”, pois não é possível reconstruir seu tempo com precisão.
 
 O ranking não exige cadastro: cada partida recebe um identificador aleatório temporário, e a sessão interna é guardada apenas no backend. O nome público é o apelido escolhido pelo jogador.
 
@@ -40,7 +42,8 @@ O ranking não exige cadastro: cada partida recebe um identificador aleatório t
 
 O backend em uso é o projeto `jogo-das-teclas-ranking`, hospedado na região São Paulo (`sa-east-1`).
 
-- Migração do banco, tabelas e políticas RLS: [`supabase/migrations/20261030_global_leaderboard.sql`](supabase/migrations/20261030_global_leaderboard.sql)
+- Migração inicial do banco, tabelas e políticas RLS: [`supabase/migrations/20261030_global_leaderboard.sql`](supabase/migrations/20261030_global_leaderboard.sql)
+- Migração aditiva de pontuação competitiva e tempo ativo: [`supabase/migrations/20261103_competitive_ranking.sql`](supabase/migrations/20261103_competitive_ranking.sql)
 - Função de sessão e validação: [`supabase/functions/ranking-api/index.ts`](supabase/functions/ranking-api/index.ts)
 - Configuração pública do cliente: [`assets/js/supabase-config.js`](assets/js/supabase-config.js)
 
@@ -59,7 +62,9 @@ Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/g
 │       └── supabase-config.js
 └── supabase/
     ├── functions/ranking-api/index.ts
-    └── migrations/20261030_global_leaderboard.sql
+    └── migrations/
+        ├── 20261030_global_leaderboard.sql
+        └── 20261103_competitive_ranking.sql
 ```
 
 ## Dificuldades da batalha

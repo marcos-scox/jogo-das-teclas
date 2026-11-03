@@ -64,7 +64,13 @@ const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 const reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const fmt = n => Math.round(n).toLocaleString('pt-BR');
 const mmss = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); };
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const formatActiveTime = value => {
+  if(value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+  const total = Math.max(0, Math.round(Number(value)));
+  const hours = Math.floor(total / 3600), minutes = Math.floor((total % 3600) / 60), seconds = total % 60;
+  return hours ? hours + ':' + String(minutes).padStart(2,'0') + ':' + String(seconds).padStart(2,'0') : minutes + ':' + String(seconds).padStart(2,'0');
+};
+const esc = s => String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
 const strip = c => c.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const secLabel = s => s < 60 ? s + ' s' : (s % 60 ? Math.floor(s/60) + ' min ' + (s%60) + ' s' : (s/60) + ' min');
 const words = t => t.trim().split(/\s+/).length;
@@ -370,23 +376,38 @@ const Ranking = {
     if(!this.session) return;
     return this.api({action, runId:this.session.runId, token:this.session.token});
   },
-  async complete(phase, inputs, accentsOptional){
+  async fail(phase, inputs, accentsOptional, reason, activeSeconds){
+    if(!this.session) return;
+    return this.api({action:'phase-fail', runId:this.session.runId, token:this.session.token, phase, inputs, accentsOptional, reason, activeSeconds});
+  },
+  async complete(phase, inputs, accentsOptional, activeSeconds){
     if(!this.session) return null;
-    return this.api({action:'complete-phase', runId:this.session.runId, token:this.session.token, phase, inputs, accentsOptional});
+    return this.api({action:'complete-phase', runId:this.session.runId, token:this.session.token, phase, inputs, accentsOptional, activeSeconds});
   },
   async fetchRows(difficulty, cursor, limit){
     if(!this.config.url || !this.config.publishableKey) throw new Error('config');
     const params = new URLSearchParams({
-      select:'id,player_name,score,difficulty,completed_at',
+      select:'id,player_name,score,difficulty,completed_at,active_seconds',
       difficulty:'eq.' + difficulty,
-      order:'score.desc,completed_at.asc,id.asc',
+      order:'score.desc,active_seconds.asc.nullslast,completed_at.asc,id.asc',
       limit:String(limit)
     });
     if(cursor){
       const score = Number(cursor.score);
+      const activeSeconds = cursor.active_seconds == null ? null : Number(cursor.active_seconds);
       const completedAt = String(cursor.completed_at);
       const id = String(cursor.id);
-      params.set('or', '(score.lt.' + score + ',and(score.eq.' + score + ',completed_at.gt.' + completedAt + '),and(score.eq.' + score + ',completed_at.eq.' + completedAt + ',id.gt.' + id + '))');
+      const after = ['score.lt.' + score];
+      if(activeSeconds === null){
+        after.push('and(score.eq.' + score + ',active_seconds.is.null,completed_at.gt.' + completedAt + ')');
+        after.push('and(score.eq.' + score + ',active_seconds.is.null,completed_at.eq.' + completedAt + ',id.gt.' + id + ')');
+      }else{
+        after.push('and(score.eq.' + score + ',active_seconds.gt.' + activeSeconds + ')');
+        after.push('and(score.eq.' + score + ',active_seconds.eq.' + activeSeconds + ',completed_at.gt.' + completedAt + ')');
+        after.push('and(score.eq.' + score + ',active_seconds.eq.' + activeSeconds + ',completed_at.eq.' + completedAt + ',id.gt.' + id + ')');
+        after.push('and(score.eq.' + score + ',active_seconds.is.null)');
+      }
+      params.set('or', '(' + after.join(',') + ')');
     }
     const url = this.config.url + '/rest/v1/leaderboard_entries?' + params.toString();
     const r = await fetch(url, {headers:{'apikey':this.config.publishableKey}});
@@ -397,7 +418,9 @@ const Ranking = {
     return rows.map((row, i) => {
       const position = start + i + 1;
       const date = row.completed_at ? new Date(row.completed_at).toLocaleDateString('pt-BR') : '';
-      return '<li class="ranking-row rank-' + position + '"><span class="ranking-position" aria-label="' + position + 'º lugar">' + position + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-score">' + fmt(row.score) + '</span></li>';
+      const activeTime = formatActiveTime(row.active_seconds);
+      const label = position + 'º lugar, ' + row.player_name + ', ' + fmt(row.score) + ' pontos, tempo ativo ' + activeTime;
+      return '<li class="ranking-row rank-' + position + '" aria-label="' + esc(label) + '"><span class="ranking-position" aria-hidden="true">' + position + '</span><span class="ranking-player">' + esc(row.player_name) + '<span class="ranking-date">Concluído em ' + esc(date) + '</span></span><span class="ranking-score" aria-label="' + fmt(row.score) + ' pontos">' + fmt(row.score) + '</span><span class="ranking-time" aria-label="Tempo ativo ' + esc(activeTime) + '">' + esc(activeTime) + '</span></li>';
     }).join('');
   },
   select(difficulty){
@@ -417,11 +440,13 @@ const Ranking = {
     const status = $('#ranking-status'), list = $('#ranking-list');
     status.textContent = 'Carregando ranking…';
     list.innerHTML = '';
+    $('#ranking-columns').hidden = true;
     try{
       const rows = await this.fetchRows(difficulty, null, 5);
       if(request !== this.previewRequest || difficulty !== this.difficulty) return;
       if(!rows.length){ status.textContent = 'Ainda não há campanhas concluídas neste nível. Seja o primeiro!'; return; }
       status.textContent = 'Exibindo as ' + rows.length + ' melhores campanhas.';
+      $('#ranking-columns').hidden = false;
       list.innerHTML = this.renderRows(rows);
     }catch(e){
       if(request !== this.previewRequest) return;
@@ -435,6 +460,7 @@ const Ranking = {
       this.fullRequest++;
       this.fullLoading = false;
       $('#leaderboard-list').innerHTML = '';
+      $('#leaderboard-columns').hidden = true;
     }
     if(this.fullLoading) return;
     const request = this.fullRequest;
@@ -454,6 +480,7 @@ const Ranking = {
       if(!this.fullRows.length) status.textContent = 'Ainda não há campanhas concluídas neste nível. Seja o primeiro!';
       else if(rows.length === this.pageSize) status.textContent = 'Exibindo ' + this.fullRows.length + ' posições. Carregue mais para continuar a classificação.';
       else status.textContent = 'Classificação completa: ' + this.fullRows.length + ' resultado' + (this.fullRows.length === 1 ? '' : 's') + '.';
+      $('#leaderboard-columns').hidden = !this.fullRows.length;
       more.hidden = rows.length !== this.pageSize;
     }catch(e){
       if(request !== this.fullRequest) return;
@@ -705,6 +732,8 @@ const DIFFICULTIES = {
   medium:{label:'Médio', seconds:120, errorPenalty:5, correctBonus:0},
   hard:{label:'Difícil', seconds:60, errorPenalty:5, correctBonus:1}
 };
+const SCORE_RULES = {speedPerWpm:10, speedCap:1500, precisionCap:1000, campaignTimeCap:5000, campaignTimePerSecond:4};
+const campaignTimeBonus = seconds => Math.max(0, SCORE_RULES.campaignTimeCap - Math.floor(Math.max(0, seconds) * SCORE_RULES.campaignTimePerSecond));
 const difficulty = () => DIFFICULTIES[G.difficulty] || DIFFICULTIES.easy;
 const maxErrors = () => BASE_MAX_ERRORS + (G.extraDefense ? 1 : 0);
 function calculatedTimeLeft(now=performance.now()){
@@ -715,7 +744,7 @@ const cv = $('#g-canvas');
 const cx = cv.getContext('2d');
 const G = {
   running:false, raf:0, last:0, t:0, W:0, H:0, dpr:1,
-  difficulty:null, perfectPhases:0, extraDefense:false,
+  difficulty:null, perfectPhases:0, extraDefense:false, totalActiveSeconds:0,
   state:'idle', idx:0, score:0, phaseStartScore:0, errors:0, streak:0,
   phaseDuration:180, timeLeft:180, timePenalty:0, timeBonus:0, phaseStart:0, pausedAt:0, pausedTotal:0, lastSec:-1,
   enemies:[], bullets:[], parts:[], stars:[], queue:[],
@@ -771,7 +800,7 @@ function startGame(){
   gResize();
   G.difficulty = null;
   G.perfectPhases = 0; G.extraDefense = false;
-  G.idx = 0; G.score = 0; G.phaseStartScore = 0; G.errors = 0;
+  G.idx = 0; G.score = 0; G.phaseStartScore = 0; G.errors = 0; G.totalActiveSeconds = 0;
   G.phaseDuration = DIFFICULTIES.easy.seconds; G.timeLeft = G.phaseDuration;
   G.timePenalty = 0; G.timeBonus = 0;
   G.enemies = []; G.bullets = []; G.parts = []; G.queue = [];
@@ -784,7 +813,7 @@ function startGame(){
 }
 
 function startRun(){
-  G.score = 0; G.phaseStartScore = 0; G.runMisses = new Map(); G.newRecord = false;
+  G.score = 0; G.phaseStartScore = 0; G.runMisses = new Map(); G.newRecord = false; G.totalActiveSeconds = 0;
   enterPhase(0);
 }
 
@@ -902,7 +931,27 @@ function mergeMisses(){
   G.typer.misses.forEach((v, k) => G.runMisses.set(k, (G.runMisses.get(k) || 0) + v));
 }
 
-function phaseActiveSecs(){ return Math.max(0.5, (performance.now() - G.phaseStart - G.pausedTotal) / 1000); }
+function phaseActiveSecs(now=performance.now()){
+  const pausedNow = G.state === 'pause' ? Math.max(0, now - G.pausedAt) : 0;
+  return Math.max(0.5, (now - G.phaseStart - G.pausedTotal - pausedNow) / 1000);
+}
+function addPhaseActiveTime(){
+  const seconds = phaseActiveSecs();
+  G.totalActiveSeconds += seconds;
+  return seconds;
+}
+function reportFailedAttempt(reason, activeSeconds){
+  if(!Ranking.session) return;
+  const runId = Ranking.session.runId;
+  const inputs = G.typer ? G.typer.inputLog.join('') : '';
+  Ranking.fail(G.idx, inputs, !Store.data.prefs.accents, reason, activeSeconds).then(result => {
+    if(Ranking.session?.runId !== runId) return;
+    if(Number.isFinite(result?.totalActiveSeconds)) G.totalActiveSeconds = result.totalActiveSeconds;
+  }).catch(e => {
+    if(Ranking.session?.runId !== runId) return;
+    Ranking.session = null; G.rankStatus = 'error'; G.rankError = e.message;
+  });
+}
 
 function saveGame(phasesDone){
   const gd = Store.data.game;
@@ -948,18 +997,25 @@ function gClear(){
   const phaseDefenses = maxErrors();
   const hadExtraDefense = G.extraDefense;
   const perfect = G.errors === 0;
+  const activeSeconds = addPhaseActiveTime();
   if(perfect) G.perfectPhases++;
   const earnedDefense = !G.extraDefense && G.perfectPhases >= 3;
   if(earnedDefense) G.extraDefense = true;
   const left = Math.ceil(G.timeLeft);
-  const bonus = left * 10 + (phaseDefenses - G.errors) * 100;
+  const t = G.typer;
+  const accuracyRate = t.correct + G.errors ? t.correct / (t.correct + G.errors) : 0;
+  const speedWpm = (t.correct / 5) / (activeSeconds / 60);
+  const speedBonus = Math.min(SCORE_RULES.speedCap, Math.round(speedWpm * SCORE_RULES.speedPerWpm));
+  const precisionBonus = Math.round(accuracyRate * SCORE_RULES.precisionCap);
+  const last = G.idx === PHASES.length - 1;
+  const phaseBonus = left * 10 + (phaseDefenses - G.errors) * 100 + speedBonus + precisionBonus;
+  const campaignBonus = last ? campaignTimeBonus(G.totalActiveSeconds) : 0;
+  const bonus = phaseBonus + campaignBonus;
   G.score += bonus;
   mergeMisses();
-  const t = G.typer;
-  G.lastStats = {ppm:(t.correct / 5) / (phaseActiveSecs() / 60), acc:t.acc(), errors:G.errors, maxErrors:phaseDefenses, left, bonus, perfect, perfectPhases:G.perfectPhases, earnedDefense};
+  G.lastStats = {ppm:speedWpm, acc:t.acc(), errors:G.errors, maxErrors:phaseDefenses, left, bonus, phaseBonus, speedBonus, precisionBonus, campaignBonus, phaseActiveSeconds:activeSeconds, totalActiveSeconds:G.totalActiveSeconds, perfect, perfectPhases:G.perfectPhases, earnedDefense};
   hud();
   Sfx.clear();
-  const last = G.idx === PHASES.length - 1;
   const reveal = () => {
     if(G.state !== 'clear' || view !== 'game') return;
     if(last) saveGame(5);
@@ -967,12 +1023,19 @@ function gClear(){
   };
   if(Ranking.session){
     G.rankStatus = 'checking';
-    Ranking.complete(G.idx, G.typer.inputLog.join(''), !Store.data.prefs.accents).then(result => {
+    Ranking.complete(G.idx, G.typer.inputLog.join(''), !Store.data.prefs.accents, activeSeconds).then(result => {
       if(G.state !== 'clear' || view !== 'game') return;
       G.score = result.score;
       if(Number.isInteger(result.perfectPhases)) G.perfectPhases = result.perfectPhases;
       if(typeof result.extraLife === 'boolean') G.extraDefense = result.extraLife;
-      if(Number.isInteger(result.phaseBonus)) G.lastStats.bonus = result.phaseBonus;
+      if(Number.isInteger(result.phaseBonus)) G.lastStats.phaseBonus = result.phaseBonus;
+      if(Number.isInteger(result.campaignTimeBonus)) G.lastStats.campaignBonus = result.campaignTimeBonus;
+      if(Number.isInteger(result.totalBonus)) G.lastStats.bonus = result.totalBonus;
+      else if(Number.isInteger(result.phaseBonus)) G.lastStats.bonus = result.phaseBonus + (Number.isInteger(result.campaignTimeBonus) ? result.campaignTimeBonus : 0);
+      if(Number.isInteger(result.speedBonus)) G.lastStats.speedBonus = result.speedBonus;
+      if(Number.isInteger(result.precisionBonus)) G.lastStats.precisionBonus = result.precisionBonus;
+      if(Number.isFinite(result.phaseActiveSeconds)) G.lastStats.phaseActiveSeconds = result.phaseActiveSeconds;
+      if(Number.isFinite(result.totalActiveSeconds)){ G.totalActiveSeconds = result.totalActiveSeconds; G.lastStats.totalActiveSeconds = result.totalActiveSeconds; }
       if(Number.isFinite(result.remainingSeconds)) G.lastStats.left = result.remainingSeconds;
       G.lastStats.perfectPhases = G.perfectPhases;
       G.lastStats.earnedDefense = !hadExtraDefense && G.extraDefense;
@@ -991,6 +1054,8 @@ function gClear(){
 function gLose(reason){
   if(G.state !== 'play') return;
   G.state = 'lost'; G.lostReason = reason; G.charge = true;
+  const activeSeconds = addPhaseActiveTime();
+  reportFailedAttempt(reason, activeSeconds);
   G.typer.finish('lost');
   mergeMisses();
   Sfx.lose();
@@ -1044,7 +1109,10 @@ async function gAct(a){
   }
   else if(a === 'go') beginCountdown();
   else if(a === 'next' && G.state === 'clear') enterPhase(G.idx + 1);
-  else if(a === 'retry'){ G.score = G.phaseStartScore; enterPhase(G.idx); }
+  else if(a === 'retry'){
+    if(G.state === 'pause'){ const activeSeconds = addPhaseActiveTime(); reportFailedAttempt('manual', activeSeconds); }
+    G.score = G.phaseStartScore; enterPhase(G.idx);
+  }
   else if(a === 'restart'){
     if(G.difficulty && G.rankStatus !== 'error' && G.rankStatus !== 'unavailable'){
       const parent = Ranking.session ? {runId:Ranking.session.runId, token:Ranking.session.token} : null;
@@ -1121,6 +1189,7 @@ function overlay(kind){
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Cada erro desconta 5 segundos.</span></button>';
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-hard"><strong>Difícil · 1 minuto</strong><span>Erro: −5 s. Tecla certa: +1 s.</span></button>';
     h += '</div><p class="ov-hint">Complete 3 fases sem erro (acumuladas, não precisam ser seguidas) para ganhar um ponto de defesa extra nas fases restantes.</p>';
+    h += '<p class="ov-hint">O ranking dá bônus por rapidez e precisão e até 5.000 pontos pelo tempo total da campanha. O tempo ativo soma todas as tentativas nas fases; pausas, menus e transições não contam. O servidor valida esse tempo com tolerância de rede limitada. Ao repetir uma fase, o limite regressivo reinicia.</p>';
   }else if(kind === 'intro'){
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + '</p><h3>' + esc(P.name) + '</h3><p>' + esc(P.desc) + '</p>';
     const d = difficulty();
@@ -1135,7 +1204,7 @@ function overlay(kind){
   }else if(kind === 'clear'){
     const s = G.lastStats;
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + ' concluída</p><h3>' + esc(P.name) + ': caminho livre!</h3>';
-    h += '<dl class="ov-stats"><div><dt>PPM</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Erros</dt><dd>' + s.errors + ' de ' + s.maxErrors + '</dd></div><div><dt>Tempo sobrando</dt><dd>' + mmss(s.left) + '</dd></div><div><dt>Bônus</dt><dd>+' + fmt(s.bonus) + '</dd></div><div><dt>Pontos</dt><dd>' + fmt(G.score) + '</dd></div></dl>';
+    h += '<dl class="ov-stats"><div><dt>PPM</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Erros</dt><dd>' + s.errors + ' de ' + s.maxErrors + '</dd></div><div><dt>Tempo sobrando</dt><dd>' + mmss(s.left) + '</dd></div><div><dt>Bônus de velocidade</dt><dd>+' + fmt(s.speedBonus) + '</dd></div><div><dt>Bônus de precisão</dt><dd>+' + fmt(s.precisionBonus) + '</dd></div><div><dt>Bônus total</dt><dd>+' + fmt(s.bonus) + '</dd></div><div><dt>Pontos</dt><dd>' + fmt(G.score) + '</dd></div></dl>';
     if(s.earnedDefense) h += '<p><strong>Recompensa!</strong> Você ganhou 1 ponto de defesa extra nas fases restantes.</p>';
     else if(G.extraDefense) h += '<p>Defesa extra ativa: você tem 6 pontos de defesa nas fases restantes.</p>';
     else h += '<p>Fases sem erro acumuladas: ' + G.perfectPhases + ' de 3 para liberar defesa extra.</p>';
@@ -1156,7 +1225,7 @@ function overlay(kind){
     h += '<p>Pontuação final: <strong>' + fmt(G.score) + '</strong>' + (G.newRecord ? ' (novo recorde!)' : '. Recorde: ' + fmt(Store.data.game.best)) + '</p>';
     if(G.rankStatus === 'saved') h += '<p class="rank-submit-status" role="status">Pontuação validada e enviada automaticamente ao Ranking Global em ' + esc(DIFFICULTIES[G.difficulty].label) + '.</p>';
     else h += '<p class="rank-submit-status" role="status">A partida foi concluída, mas não entrou no ranking. ' + esc(G.rankError || 'A validação online não ficou disponível nesta partida.') + '</p>';
-    h += '<dl class="ov-stats"><div><dt>PPM no chefão</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Bônus final</dt><dd>+' + fmt(s.bonus) + '</dd></div></dl>';
+    h += '<dl class="ov-stats"><div><dt>Pontuação final</dt><dd>' + fmt(G.score) + '</dd></div><div><dt>Tempo ativo</dt><dd>' + formatActiveTime(s.totalActiveSeconds) + '</dd></div><div><dt>PPM no chefão</dt><dd>' + Math.round(s.ppm) + '</dd></div><div><dt>Precisão</dt><dd>' + Math.round(s.acc) + '%</dd></div><div><dt>Bônus de velocidade</dt><dd>+' + fmt(s.speedBonus) + '</dd></div><div><dt>Bônus de precisão</dt><dd>+' + fmt(s.precisionBonus) + '</dd></div><div><dt>Bônus de tempo da campanha</dt><dd>+' + fmt(s.campaignBonus) + '</dd></div></dl>';
     h += '<div class="ov-keys"><h4>Teclas que mais travaram você na campanha</h4><div class="keyrow" id="ov-keys"></div></div>';
     h += '<div class="ov-actions"><button class="btn primary" type="button" data-g="restart">Jogar de novo</button><button class="btn" type="button" data-g="menu">Menu inicial</button></div>';
   }
