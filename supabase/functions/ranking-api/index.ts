@@ -26,7 +26,26 @@ const PRECISION_BONUS_CAP = 1000;
 const CAMPAIGN_TIME_BONUS_CAP = 5000;
 const CAMPAIGN_TIME_BONUS_PER_SECOND = 4;
 const NETWORK_TIME_TOLERANCE_SECONDS = 1.5;
+
 type Difficulty = keyof typeof SETTINGS;
+const PHASE_TEXTS: Record<Difficulty, string[]> = {
+  easy: [
+    'as naves cruzam o céu e a base aguarda a sua defesa',
+    'os morcegos voam baixo e você mantém o ritmo com calma',
+    'a frota avança enquanto seus dedos seguem leves e atentos',
+    'a equipe protege a cidade com coragem e precisão',
+    'o rei dos erros perde força quando você digita com calma',
+  ],
+  medium: [
+    'Alerta 1: as naves chegaram! Digite com atenção e proteja a base.',
+    'Fase 2 - Os morcegos voam a 80 km/h; mantenha o ritmo e não pare.',
+    'Drone 3 na área: energia em 75%. Mire, digite e avance!',
+    'Robôs na linha 4; restam 3 torres e 1 gerador. Proteja o portão!',
+    'Chefe final: Rei dos Erros. Use foco, precisão e coragem para vencer!',
+  ],
+  hard: PHASES,
+};
+
 
 const ALLOWED_ORIGINS = new Set([
   "https://marcos-scox.github.io",
@@ -198,7 +217,7 @@ Deno.serve(async (req: Request) => {
     if (body.reason !== "time" && body.reason !== "reach" && body.reason !== "manual") return fail(req, 400, "Motivo de encerramento inválido.");
     if (body.reason === "manual" && !run.paused_at) return fail(req, 400, "Pause a fase antes de recomeçá-la.");
 
-    const phaseText = Array.from(PHASES[run.current_phase]);
+    const phaseText = Array.from(PHASE_TEXTS[run.difficulty as Difficulty][run.current_phase]);
     const typedKeys = Array.from(body.inputs);
     if (typedKeys.length > phaseText.length * 6) return fail(req, 400, "Trilha de teclas excede o limite da fase.");
     let position = 0;
@@ -250,7 +269,7 @@ Deno.serve(async (req: Request) => {
     return fail(req, 400, "Duração ativa inválida.");
   }
 
-  const phaseText = Array.from(PHASES[run.current_phase]);
+  const phaseText = Array.from(PHASE_TEXTS[run.difficulty as Difficulty][run.current_phase]);
   const typedKeys = Array.from(body.inputs);
   if (typedKeys.length > phaseText.length * 6) return fail(req, 400, "Trilha de teclas excede o limite da fase.");
 

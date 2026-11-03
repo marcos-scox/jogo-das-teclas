@@ -37,15 +37,39 @@ const PHASES = [
    desc:'Chegam em bando, mas caem com 2 tiros. Não se assuste com a quantidade.',
    text:'Os morcegos digitais voam rápido e atacam em grupo. Respire fundo e mantenha os dedos na posição inicial. Cada palavra completa enfraquece o bando e deixa a base um pouco mais segura.'},
   {name:'Frota de drones', enemy:'drone', hp:3, max:5, color:'#5ED0F0',
-   desc:'Pequenos e resistentes: 3 tiros cada. O texto tem pontuação, então atenção às vírgulas.',
+   desc:'Pequenos e resistentes: 3 tiros cada. Mantenha a precisão para derrubar toda a frota.',
    text:'Alerta: uma frota de drones cruzou a barreira de energia! Eles são pequenos, mas resistentes, e só recuam diante de quem digita com precisão. Não tente correr demais; um erro agora custa caro. Concentre-se, siga o ritmo e derrube um por um.'},
   {name:'Robôs blindados', enemy:'robot', hp:4, max:4, color:'#FF9157',
-   desc:'Avançam em fila e exigem 4 tiros cada. O texto tem números: atenção à fileira de cima.',
+   desc:'Avançam em fila e exigem 4 tiros cada. Proteja a base até o portão ficar livre.',
    text:'Relatório da base: 12 torres ativas, 3 em manutenção e 1 gerador funcionando com 75% da carga. Os robôs blindados avançam em fila e exigem 4 tiros cada. Comandante, a decisão é sua: segure a posição, economize energia e não deixe que eles cheguem a menos de 50 metros do portão.'},
   {name:'O Rei dos Erros', enemy:'boss', hp:0, max:1, color:'#FF5C8A',
    desc:'Um só inimigo, com uma vida para cada letra do texto. Termine o texto e ele cai.',
    text:'Atenção, último aviso: o Rei dos Erros despertou. Ele se alimenta de cada tecla trocada, de cada letra esquecida e de cada pressa sem sentido. Para vencê-lo, você vai precisar de foco total, mãos leves e olhos na tela. Lembre-se do treino: posição, ritmo e precisão. Se chegou até aqui, já provou que é capaz. Agora, termine o que começou!'}
 ];
+
+
+// Textos de missão por dificuldade. O modo difícil preserva integralmente os textos originais.
+const PHASE_TEXTS = {
+  easy: [
+    'as naves cruzam o céu e a base aguarda a sua defesa',
+    'os morcegos voam baixo e você mantém o ritmo com calma',
+    'a frota avança enquanto seus dedos seguem leves e atentos',
+    'a equipe protege a cidade com coragem e precisão',
+    'o rei dos erros perde força quando você digita com calma'
+  ],
+  medium: [
+    'Alerta 1: as naves chegaram! Digite com atenção e proteja a base.',
+    'Fase 2 - Os morcegos voam a 80 km/h; mantenha o ritmo e não pare.',
+    'Drone 3 na área: energia em 75%. Mire, digite e avance!',
+    'Robôs na linha 4; restam 3 torres e 1 gerador. Proteja o portão!',
+    'Chefe final: Rei dos Erros. Use foco, precisão e coragem para vencer!'
+  ],
+  hard: PHASES.map(phase => phase.text)
+};
+function phaseFor(index){
+  const phase = PHASES[index];
+  return phase ? {...phase, text:PHASE_TEXTS[G.difficulty]?.[index] || phase.text} : null;
+}
 
 const TIPS = [
   'Deixe os indicadores sobre F e J. As pequenas saliências nessas teclas guiam seus dedos sem precisar olhar.',
@@ -837,7 +861,7 @@ function startRun(){
 
 function enterPhase(i){
   clearTimers();
-  const P = PHASES[i];
+  const P = phaseFor(i);
   G.idx = i; G.errors = 0; G.streak = 0;
   G.charge = false; G.shipDead = false;
   G.enemies = []; G.bullets = []; G.parts = [];
@@ -858,7 +882,7 @@ function enterPhase(i){
 }
 
 function gSpawn(){
-  const P = PHASES[G.idx];
+  const P = phaseFor(G.idx);
   const hp = G.queue.shift();
   const used = new Set(G.enemies.map(e => e.slot));
   let s = 0; while(used.has(s)) s++;
@@ -871,7 +895,7 @@ function gSpawn(){
   return e;
 }
 function gFill(){
-  const P = PHASES[G.idx];
+  const P = phaseFor(G.idx);
   let n = G.enemies.filter(e => e.hp - e.res > 0).length;
   while(n < P.max && G.queue.length){ gSpawn(); n++; }
 }
@@ -1165,7 +1189,7 @@ $('#g-frame').addEventListener('click', e => {
 });
 
 function hud(){
-  const P = PHASES[G.idx];
+  const P = phaseFor(G.idx);
   $('#h-phase').textContent = G.state === 'difficulty'
     ? 'Escolha a dificuldade'
     : 'Fase ' + (G.idx + 1) + ' de ' + PHASES.length + ' · ' + difficulty().label;
@@ -1195,7 +1219,7 @@ function hudTime(){
 
 function overlay(kind){
   const o = $('#g-over');
-  const P = PHASES[G.idx], n = G.idx + 1, total = PHASES.length;
+  const P = phaseFor(G.idx), n = G.idx + 1, total = PHASES.length;
   let h = '<div class="ov-card" role="dialog" aria-live="polite">';
   if(kind === 'difficulty'){
     h += '<p class="ov-step">Antes de começar a campanha</p><h3>Escolha a dificuldade</h3><p>A escolha fica fixa nesta partida e só muda quando você voltar ao menu principal.</p>';
@@ -1203,8 +1227,8 @@ function overlay(kind){
     try{ savedName = localStorage.getItem('toque-certo:ranking-name') || ''; }catch(e){}
     h += '<label class="rank-name-field" for="rank-player-name">Seu nome no ranking<input id="rank-player-name" type="text" maxlength="24" autocomplete="nickname" placeholder="Ex.: Ana" value="' + esc(savedName) + '"><span class="rank-name-help" id="rank-name-help">Será enviado automaticamente quando você vencer as 5 fases.</span></label><p class="rank-name-error" id="rank-name-error" aria-live="polite"></p>';
     h += '<div class="difficulty-options">';
-    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-easy"><strong>Fácil · 3 minutos</strong><span>Sem penalidade de tempo por erro.</span></button>';
-    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Cada erro desconta 5 segundos.</span></button>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-easy"><strong>Fácil · 3 minutos</strong><span>Missões só com letras, espaços e acentos; sem pontuação ou números. Sem penalidade de tempo por erro.</span></button>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Missões com letras, acentos, números e sinais de pontuação. Cada erro desconta 5 segundos.</span></button>';
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-hard"><strong>Difícil · 1 minuto</strong><span>Erro: −5 s. Tecla certa: +1 s.</span></button>';
     h += '</div><p class="ov-hint">Complete 3 fases sem erro (acumuladas, não precisam ser seguidas) para ganhar um ponto de defesa extra nas fases restantes.</p>';
     h += '<p class="ov-hint">O ranking dá bônus por rapidez e precisão e até 5.000 pontos pelo tempo total da campanha. O tempo ativo soma todas as tentativas nas fases; pausas, menus e transições não contam. O servidor valida esse tempo com tolerância de rede limitada. Ao repetir uma fase, o limite regressivo reinicia.</p>';
