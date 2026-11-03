@@ -7,7 +7,13 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const PHASE_NAMES = ["Gosmas lunares", "Morcegos digitais", "Frota de drones", "Robôs blindados", "O Rei dos Erros"];
+const PHASE_NAMES = [
+  "Gosmas lunares",
+  "Morcegos digitais",
+  "Frota de drones",
+  "Robôs blindados",
+  "O Rei dos Erros",
+];
 const PHASES = [
   "os invasores chegaram pela lua. cada tecla certa dispara um tiro. mantenha a calma, olhe para a tela e digite sem pressa para proteger a base.",
   "Os morcegos digitais voam rápido e atacam em grupo. Respire fundo e mantenha os dedos na posição inicial. Cada palavra completa enfraquece o bando e deixa a base um pouco mais segura.",
@@ -34,22 +40,22 @@ const PHASE_TEXTS: Record<Difficulty, string[]> = {
     "os morcegos atravessam o vale em busca das luzes que brilham perto das casas e das pequenas lojas da praça\nvocê observa o voo deles com atenção e mantém os dedos leves enquanto ajuda os vizinhos a encontrar um caminho tranquilo para longe da confusão",
     "a frota avança devagar entre as nuvens e reflete a luz azul do oceano que banha toda a costa\nseus dedos seguem firmes no teclado enquanto cada nave se afasta das pessoas que vivem perto do mar e esperam notícias da equipe",
     "a equipe caminha unida pelas ruas para proteger a escola o parque e os jardins onde as crianças brincam\ncom coragem e precisão todos encontram um lugar tranquilo onde podem descansar juntos enquanto os guardas mantêm a entrada segura para cada família",
-    "o rei dos erros espalha medo pela cidade mas você continua confiante e lembra de tudo que aprendeu durante o treino\ncada palavra escrita com calma devolve a força para a equipe e ilumina o caminho de volta até as casas protegidas da cidade"
-  ] ,
+    "o rei dos erros espalha medo pela cidade mas você continua confiante e lembra de tudo que aprendeu durante o treino\ncada palavra escrita com calma devolve a força para a equipe e ilumina o caminho de volta até as casas protegidas da cidade",
+  ],
   medium: [
     "Alerta 1: as naves chegaram! A base precisa de ajuda agora. Avise a equipe e acenda os sinais de emergência.\nO painel mostra energia em 75%, escudos em 3 níveis e combustível para 12 minutos. Confira todos os dados antes de partir.\nO radar indica 18 invasores a 4 km; proteja o portão norte e acompanhe a rota A-7 pelo mapa.\nDigite cada instrução com atenção. Pressione Enter no fim deste parágrafo e prepare a defesa para o primeiro ataque!",
     "Fase 2 - Os morcegos voam a 80 km/h; mantenha o ritmo e observe o radar. A equipe aguarda seu sinal.\nForam detectados 12 sinais nos setores B-2, C-4 e D-1; quatro deles seguem para a torre principal.\nConsulte o mapa (setor B-3), proteja a entrada número 2 e mantenha o farol aceso por 15 s.\nNão pare agora: cada tecla certa reduz o perigo em 10%. Avise os moradores e mantenha o caminho livre!",
     "Drone 3 na área: energia em 75%. Mire com cuidado e avance! A central acompanha seus movimentos pelo radar.\nA frota atravessou o portão às 14:30; restam 6 unidades e o núcleo está marcado como alvo 04.\nConfira o painel: escudo +20%, motor em 2ª marcha e rota de saída C-9 desimpedida para a equipe.\nDigite com precisão; um erro custa 5 segundos. A equipe aguarda sua confirmação antes de fechar as portas!",
     "Robôs na linha 4; restam 3 torres e 1 gerador funcionando. Mantenha a comunicação aberta com a central.\nO comandante calcula 4 tiros por robô, 2 rotas seguras e 40% de energia para a torre sul.\nMantenha os invasores a 50 m do portão e envie 2 técnicos para revisar o painel principal da base.\nAperte cada tecla com atenção! Proteja os moradores e mantenha a defesa ativa até receber o sinal verde.",
-    "Chefe final: Rei dos Erros. O alerta vermelho está ativo e o escudo caiu para 20%. A equipe precisa de você.\nO núcleo tem 100% de energia e 5 escudos para derrubar; o código de acesso é K-27.\nUse foco, precisão e coragem; o destino da base depende desta sequência: 3-1-4-2. Não troque nenhum sinal.\nConclua a missão em 3, 2, 1... comece! Confirme “vitória” no painel e salve a cidade inteira!"
-  ] ,
+    "Chefe final: Rei dos Erros. O alerta vermelho está ativo e o escudo caiu para 20%. A equipe precisa de você.\nO núcleo tem 100% de energia e 5 escudos para derrubar; o código de acesso é K-27.\nUse foco, precisão e coragem; o destino da base depende desta sequência: 3-1-4-2. Não troque nenhum sinal.\nConclua a missão em 3, 2, 1... comece! Confirme “vitória” no painel e salve a cidade inteira!",
+  ],
   hard: [
     "os invasores chegaram pela lua. cada tecla certa dispara um tiro. mantenha a calma, olhe para a tela e digite sem pressa para proteger a base.\nO radar detectou 18 naves no setor norte; a primeira linha de defesa está a 2 km do portão.\nAtive o escudo principal em 100%, confirme a rota A-7 e informe à equipe que a evacuação começou às 21:45.\nCada erro aproxima a frota. Releia o comando, preserve a energia e mantenha uma distância segura de 30 metros.\nSua missão termina quando a última nave recua. Digite com precisão, proteja a cidade e mantenha o canal 9 aberto!",
     "Os morcegos digitais voam rápido e atacam em grupo. Respire fundo e mantenha os dedos na posição inicial. Cada palavra completa enfraquece o bando e deixa a base um pouco mais segura.\nO sistema registrou 24 criaturas no radar, distribuídas entre os setores B-2, C-4 e D-1; nenhuma rota está totalmente livre.\nFeche as janelas da torre, ajuste a frequência para 98.6 MHz e mantenha o farol aceso por 15 segundos.\nA equipe médica está no abrigo 3. Oriente os moradores pela saída leste, sem correr e sem deixar ninguém para trás.\nQuando o último sinal desaparecer, confirme “setor seguro” no painel e prepare a frota para a missão seguinte.",
     "Alerta: uma frota de drones cruzou a barreira de energia! Eles são pequenos, mas resistentes, e só recuam diante de quem digita com precisão. Não tente correr demais; um erro agora custa caro. Concentre-se, siga o ritmo e derrube um por um.\nO sensor encontrou 36 unidades a 1.250 metros, voando a 72 km/h; o núcleo de comando está marcado como alvo 04.\nCalibre o radar em 360°, reduza a potência para 65% e escolha a sequência correta: 3-1-4-2.\nUm pulso eletromagnético será liberado às 16:08. Mantenha a equipe atrás da barreira e deixe a rota C-9 desimpedida.\nApós neutralizar o último drone, registre o código “VITÓRIA-5” e aguarde a confirmação da central antes de avançar.",
     "Relatório da base: 12 torres ativas, 3 em manutenção e 1 gerador funcionando com 75% da carga. Os robôs blindados avançam em fila e exigem 4 tiros cada. Comandante, a decisão é sua: segure a posição, economize energia e não deixe que eles cheguem a menos de 50 metros do portão.\nA formação inimiga entrou pelo corredor 2 às 09:17; são 8 robôs, cada um com blindagem reforçada e sensor térmico.\nEnvie 2 técnicos ao painel, redirecione 40% da energia para a torre sul e mantenha o gerador abaixo de 90 °C.\nAs munições restantes são: 32 cargas de pulso, 14 baterias e 6 kits de reparo. Use os recursos na ordem indicada pelo mapa.\nQuando a última unidade cair, informe “PORTÃO LIVRE” pelo canal 7 e registre o total de energia preservada.",
-    "Atenção, último aviso: o Rei dos Erros despertou. Ele se alimenta de cada tecla trocada, de cada letra esquecida e de cada pressa sem sentido. Para vencê-lo, você vai precisar de foco total, mãos leves e olhos na tela. Lembre-se do treino: posição, ritmo e precisão. Se chegou até aqui, já provou que é capaz. Agora, termine o que começou!\nO núcleo do chefe atingiu 100% e abriu cinco escudos; cada escudo reage a uma sequência diferente de letras, números e sinais.\nO painel exibe o código final: K-27 / 4,8 / X! Confirme cada símbolo sem trocar a ordem e mantenha a respiração constante.\nA equipe aguarda no abrigo principal, enquanto o relógio marca 00:45. Não pressione teclas ao acaso: cada comando correto enfraquece o núcleo.\nFinalize a sequência, desligue o reator em segurança e transmita “MISSÃO CONCLUÍDA” para todas as torres da cidade!"
-  ]
+    "Atenção, último aviso: o Rei dos Erros despertou. Ele se alimenta de cada tecla trocada, de cada letra esquecida e de cada pressa sem sentido. Para vencê-lo, você vai precisar de foco total, mãos leves e olhos na tela. Lembre-se do treino: posição, ritmo e precisão. Se chegou até aqui, já provou que é capaz. Agora, termine o que começou!\nO núcleo do chefe atingiu 100% e abriu cinco escudos; cada escudo reage a uma sequência diferente de letras, números e sinais.\nO painel exibe o código final: K-27 / 4,8 / X! Confirme cada símbolo sem trocar a ordem e mantenha a respiração constante.\nA equipe aguarda no abrigo principal, enquanto o relógio marca 00:45. Não pressione teclas ao acaso: cada comando correto enfraquece o núcleo.\nFinalize a sequência, desligue o reator em segurança e transmita “MISSÃO CONCLUÍDA” para todas as torres da cidade!",
+  ],
 };
 
 const ALLOWED_ORIGINS = new Set([
@@ -60,17 +66,22 @@ const ALLOWED_ORIGINS = new Set([
 function headersFor(req: Request): HeadersInit {
   const origin = req.headers.get("origin") || "";
   const headers: Record<string, string> = {
-    "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Headers":
+      "authorization, apikey, content-type, x-client-info",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Vary": "Origin",
+    Vary: "Origin",
   };
-  if (ALLOWED_ORIGINS.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  if (ALLOWED_ORIGINS.has(origin))
+    headers["Access-Control-Allow-Origin"] = origin;
   return headers;
 }
 function response(req: Request, body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...headersFor(req), "Content-Type": "application/json; charset=utf-8" },
+    headers: {
+      ...headersFor(req),
+      "Content-Type": "application/json; charset=utf-8",
+    },
   });
 }
 function fail(req: Request, status: number, error: string): Response {
@@ -83,87 +94,216 @@ function cleanName(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const name = value.trim().replace(/\s+/gu, " ");
   const length = Array.from(name).length;
-  if (length < 2 || length > 24 || /[\u0000-\u001f\u007f<>]/u.test(name)) return null;
+  if (length < 2 || length > 24 || /[\u0000-\u001f\u007f<>]/u.test(name))
+    return null;
   return name;
 }
 async function sha256(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value),
+  );
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("");
 }
 function token(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
 }
-function matches(input: string, expected: string, accentsOptional: boolean): boolean {
+const ONLINE_TEXTS: Record<Difficulty, string> = {
+  easy: PHASE_TEXTS.easy[0],
+  medium: PHASE_TEXTS.medium[0],
+  hard: PHASE_TEXTS.hard[0],
+};
+function roomCode(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
+}
+async function loadRoom(rawCode: unknown, rawToken: unknown) {
+  if (typeof rawCode !== "string" || !/^[A-Z0-9]{6}$/.test(rawCode) || typeof rawToken !== "string" || !/^[0-9a-f]{64}$/.test(rawToken)) return { room: null, player: null, error: "Sala inválida." };
+  const hash = await sha256(rawToken);
+  const { data: player, error: playerError } = await admin.from("online_room_players").select("*").eq("token_hash", hash).maybeSingle();
+  if (playerError || !player) return { room: null, player: null, error: "Jogador não encontrado." };
+  const { data: room, error: roomError } = await admin.from("online_rooms").select("*").eq("id", player.room_id).eq("code", rawCode).maybeSingle();
+  return { room, player, error: roomError?.message || (!room ? "Sala não encontrada." : null) };
+}
+async function roomState(room: any) {
+  const { data: players, error } = await admin.from("online_room_players").select("slot,player_name,ready,progress,correct,mistakes,finished_at,last_seen_at").eq("room_id", room.id).order("slot");
+  if (error) throw error;
+  return { code: room.code, difficulty: room.difficulty, status: room.status, startedAt: room.started_at, winnerSlot: room.winner_slot, text: ONLINE_TEXTS[room.difficulty as Difficulty], players: players || [] };
+}
+function matches(
+  input: string,
+  expected: string,
+  accentsOptional: boolean,
+): boolean {
   if (input === expected) return true;
   if (!accentsOptional) return false;
-  const strip = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/gu, "");
+  const strip = (value: string) =>
+    value.normalize("NFD").replace(/[\u0300-\u036f]/gu, "");
   return strip(input) === strip(expected);
 }
 async function loadRun(id: unknown, rawToken: unknown) {
-  if (typeof id !== "string" || !/^[0-9a-f-]{36}$/iu.test(id) || typeof rawToken !== "string" || !/^[0-9a-f]{64}$/u.test(rawToken)) {
+  if (
+    typeof id !== "string" ||
+    !/^[0-9a-f-]{36}$/iu.test(id) ||
+    typeof rawToken !== "string" ||
+    !/^[0-9a-f]{64}$/u.test(rawToken)
+  ) {
     return { run: null, error: "Sessão inválida." };
   }
   const tokenHash = await sha256(rawToken);
-  const { data, error } = await admin.from("ranking_runs").select("*").eq("id", id).eq("token_hash", tokenHash).maybeSingle();
-  return { run: data, error: error?.message || (!data ? "Sessão não encontrada." : null) };
+  const { data, error } = await admin
+    .from("ranking_runs")
+    .select("*")
+    .eq("id", id)
+    .eq("token_hash", tokenHash)
+    .maybeSingle();
+  return {
+    run: data,
+    error: error?.message || (!data ? "Sessão não encontrada." : null),
+  };
 }
 async function getEntry(runId: string) {
-  const { data, error } = await admin.from("leaderboard_entries")
-    .select("id, player_name, score, difficulty, completed_at, active_seconds, total_ppm, phase_details")
-    .eq("run_id", runId).maybeSingle();
+  const { data, error } = await admin
+    .from("leaderboard_entries")
+    .select(
+      "id, player_name, score, difficulty, completed_at, active_seconds, total_ppm, phase_details",
+    )
+    .eq("run_id", runId)
+    .maybeSingle();
   if (error) throw error;
   return data;
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: headersFor(req) });
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: headersFor(req) });
   if (req.method !== "POST") return fail(req, 405, "Use POST.");
-  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) return fail(req, 500, "Configuração segura da função indisponível.");
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY)
+    return fail(req, 500, "Configuração segura da função indisponível.");
 
   let body: Record<string, unknown>;
   try {
     const parsed: unknown = await req.json();
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return fail(req, 400, "JSON inválido.");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+      return fail(req, 400, "JSON inválido.");
     body = parsed as Record<string, unknown>;
   } catch {
     return fail(req, 400, "JSON inválido.");
   }
   const action = body.action;
-
+  if (action === "room-create" || action === "room-join" || action === "room-state" || action === "room-ready" || action === "room-progress" || action === "room-finish") {
+    if (action === "room-create") {
+      if (!validDifficulty(body.difficulty)) return fail(req, 400, "Dificuldade inválida.");
+      const playerName = cleanName(body.playerName);
+      if (!playerName) return fail(req, 400, "Informe um nome de 2 a 24 caracteres.");
+      const rawToken = token();
+      let room: any = null;
+      for (let attempt = 0; attempt < 4 && !room; attempt++) {
+        const created = await admin.from("online_rooms").insert({ code: roomCode(), difficulty: body.difficulty, challenge_id: "duel-1" }).select("*").single();
+        if (!created.error) room = created.data;
+      }
+      if (!room) return fail(req, 500, "Não foi possível criar a sala.");
+      const added = await admin.from("online_room_players").insert({ room_id: room.id, slot: 1, player_name: playerName, token_hash: await sha256(rawToken) });
+      if (added.error) return fail(req, 500, "Não foi possível registrar o jogador.");
+      return response(req, { token: rawToken, slot: 1, state: await roomState(room) });
+    }
+    if (action === "room-join") {
+      const code = typeof body.code === "string" ? body.code.trim().toUpperCase() : "";
+      const playerName = cleanName(body.playerName);
+      if (!/^[A-Z0-9]{6}$/.test(code) || !playerName) return fail(req, 400, "Informe o código da sala e um nome válido.");
+      const { data: room } = await admin.from("online_rooms").select("*").eq("code", code).eq("status", "waiting").gt("expires_at", new Date().toISOString()).maybeSingle();
+      if (!room) return fail(req, 404, "Sala não encontrada ou já iniciada.");
+      const rawToken = token();
+      const added = await admin.from("online_room_players").insert({ room_id: room.id, slot: 2, player_name: playerName, token_hash: await sha256(rawToken) });
+      if (added.error) return fail(req, 409, "Essa sala já está cheia.");
+      return response(req, { token: rawToken, slot: 2, state: await roomState(room) });
+    }
+    const loaded = await loadRoom(body.code, body.token);
+    if (loaded.error || !loaded.room || !loaded.player) return fail(req, 403, loaded.error || "Sala inválida.");
+    const room = loaded.room, player = loaded.player;
+    if (new Date(room.expires_at).getTime() < Date.now()) return fail(req, 410, "A sala expirou.");
+    if (action === "room-ready") {
+      if (room.status === "waiting") {
+        await admin.from("online_room_players").update({ ready: body.ready !== false, last_seen_at: new Date().toISOString() }).eq("id", player.id);
+        const { data: both } = await admin.from("online_room_players").select("slot,ready").eq("room_id", room.id);
+        if (both?.length === 2 && both.every((item: any) => item.ready)) await admin.from("online_rooms").update({ status: "countdown", started_at: new Date(Date.now() + 3500).toISOString() }).eq("id", room.id).eq("status", "waiting");
+      }
+    } else if (action === "room-progress" || action === "room-finish") {
+      if (room.status !== "countdown" && room.status !== "racing") return fail(req, 409, "A partida ainda não começou.");
+      const progress = Math.max(0, Math.min(20000, Number(body.progress) || 0));
+      const correct = Math.max(0, Math.min(20000, Number(body.correct) || 0));
+      const mistakes = Math.max(0, Math.min(20000, Number(body.mistakes) || 0));
+      await admin.from("online_room_players").update({ progress, correct, mistakes, last_seen_at: new Date().toISOString(), ...(action === "room-finish" ? { finished_at: new Date().toISOString() } : {}) }).eq("id", player.id);
+      if (room.status === "countdown" && room.started_at && Date.parse(room.started_at) <= Date.now()) await admin.from("online_rooms").update({ status: "racing" }).eq("id", room.id).eq("status", "countdown");
+      if (action === "room-finish") await admin.from("online_rooms").update({ status: "finished", winner_slot: player.slot }).eq("id", room.id).eq("status", "racing").is("winner_slot", null);
+    }
+    return response(req, await roomState(room));
+  }
   if (action === "start") {
-    if (!validDifficulty(body.difficulty)) return fail(req, 400, "Dificuldade inválida.");
+    if (!validDifficulty(body.difficulty))
+      return fail(req, 400, "Dificuldade inválida.");
     const playerName = cleanName(body.playerName);
-    if (!playerName) return fail(req, 400, "Informe um nome de 2 a 24 caracteres.");
+    if (!playerName)
+      return fail(req, 400, "Informe um nome de 2 a 24 caracteres.");
 
     let carriedPerfect = 0;
     let carriedExtraLife = false;
     if (body.parentRunId !== undefined || body.parentToken !== undefined) {
       const parent = await loadRun(body.parentRunId, body.parentToken);
-      if (parent.error || !parent.run || parent.run.difficulty !== body.difficulty) return fail(req, 403, "A sessão anterior não pode ser validada.");
+      if (
+        parent.error ||
+        !parent.run ||
+        parent.run.difficulty !== body.difficulty
+      )
+        return fail(req, 403, "A sessão anterior não pode ser validada.");
       carriedPerfect = Number(parent.run.perfect_phases || 0);
       carriedExtraLife = Boolean(parent.run.extra_life);
     }
 
-    const forwarded = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
-    const fingerprint = await sha256(`${forwarded}|${req.headers.get("user-agent") || ""}`);
+    const forwarded =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
+    const fingerprint = await sha256(
+      `${forwarded}|${req.headers.get("user-agent") || ""}`,
+    );
     const since = new Date(Date.now() - 60_000).toISOString();
-    const { count, error: rateError } = await admin.from("ranking_runs")
+    const { count, error: rateError } = await admin
+      .from("ranking_runs")
       .select("id", { count: "exact", head: true })
-      .eq("ip_fingerprint", fingerprint).gte("created_at", since);
-    if (rateError) return fail(req, 500, "Não foi possível iniciar a sessão do ranking.");
-    if ((count || 0) >= 5) return fail(req, 429, "Muitas tentativas em pouco tempo. Aguarde um minuto.");
+      .eq("ip_fingerprint", fingerprint)
+      .gte("created_at", since);
+    if (rateError)
+      return fail(req, 500, "Não foi possível iniciar a sessão do ranking.");
+    if ((count || 0) >= 5)
+      return fail(
+        req,
+        429,
+        "Muitas tentativas em pouco tempo. Aguarde um minuto.",
+      );
 
     const rawToken = token();
-    const { data, error } = await admin.from("ranking_runs").insert({
-      token_hash: await sha256(rawToken),
-      player_name: playerName,
-      difficulty: body.difficulty,
-      perfect_phases: carriedPerfect,
-      extra_life: carriedExtraLife,
-      ip_fingerprint: fingerprint,
-    }).select("id").single();
-    if (error) return fail(req, 500, "Não foi possível iniciar a sessão do ranking.");
+    const { data, error } = await admin
+      .from("ranking_runs")
+      .insert({
+        token_hash: await sha256(rawToken),
+        player_name: playerName,
+        difficulty: body.difficulty,
+        perfect_phases: carriedPerfect,
+        extra_life: carriedExtraLife,
+        ip_fingerprint: fingerprint,
+      })
+      .select("id")
+      .single();
+    if (error)
+      return fail(req, 500, "Não foi possível iniciar a sessão do ranking.");
     return response(req, { runId: data.id, token: rawToken });
   }
 
@@ -171,90 +311,197 @@ Deno.serve(async (req: Request) => {
   if (loadError || !run) return fail(req, 403, loadError || "Sessão inválida.");
 
   if (action === "phase-begin") {
-    if (run.status !== "active") return fail(req, 409, "A sessão já foi concluída.");
-    if (run.paused_at) return fail(req, 409, "Retome ou encerre a fase pausada antes de iniciá-la novamente.");
-    if (run.phase_started_at) return response(req, { ok: true, phase: run.current_phase, alreadyStarted: true });
+    if (run.status !== "active")
+      return fail(req, 409, "A sessão já foi concluída.");
+    if (run.paused_at)
+      return fail(
+        req,
+        409,
+        "Retome ou encerre a fase pausada antes de iniciá-la novamente.",
+      );
+    if (run.phase_started_at)
+      return response(req, {
+        ok: true,
+        phase: run.current_phase,
+        alreadyStarted: true,
+      });
     // O cronômetro do jogo inicia após a contagem visual de 2,25 segundos.
     const startsAt = new Date(Date.now() + 2250).toISOString();
-    const { data: started, error } = await admin.from("ranking_runs").update({
-      phase_started_at: startsAt,
-      paused_at: null,
-      paused_seconds: 0,
-    }).eq("id", run.id).eq("status", "active").eq("current_phase", run.current_phase)
-      .is("phase_started_at", null).is("paused_at", null).select("id").maybeSingle();
-    if (error) return fail(req, 500, "Não foi possível iniciar a validação da fase.");
-    if (!started) return fail(req, 409, "A sessão mudou antes do início da fase.");
+    const { data: started, error } = await admin
+      .from("ranking_runs")
+      .update({
+        phase_started_at: startsAt,
+        paused_at: null,
+        paused_seconds: 0,
+      })
+      .eq("id", run.id)
+      .eq("status", "active")
+      .eq("current_phase", run.current_phase)
+      .is("phase_started_at", null)
+      .is("paused_at", null)
+      .select("id")
+      .maybeSingle();
+    if (error)
+      return fail(req, 500, "Não foi possível iniciar a validação da fase.");
+    if (!started)
+      return fail(req, 409, "A sessão mudou antes do início da fase.");
     return response(req, { ok: true, phase: run.current_phase });
   }
 
   if (action === "pause") {
-    if (run.status !== "active" || !run.phase_started_at) return fail(req, 409, "Não há fase ativa para pausar.");
+    if (run.status !== "active" || !run.phase_started_at)
+      return fail(req, 409, "Não há fase ativa para pausar.");
     if (run.paused_at) return response(req, { ok: true });
-    const { error } = await admin.from("ranking_runs").update({ paused_at: new Date().toISOString() })
-      .eq("id", run.id).eq("status", "active").is("paused_at", null);
+    const { error } = await admin
+      .from("ranking_runs")
+      .update({ paused_at: new Date().toISOString() })
+      .eq("id", run.id)
+      .eq("status", "active")
+      .is("paused_at", null);
     if (error) return fail(req, 500, "Não foi possível pausar a validação.");
     return response(req, { ok: true });
   }
 
   if (action === "resume") {
-    if (run.status !== "active" || !run.paused_at) return fail(req, 409, "A fase não está pausada.");
-    const pauseSeconds = Math.max(0, (Date.now() - Date.parse(run.paused_at)) / 1000);
-    const { error } = await admin.from("ranking_runs").update({
-      paused_seconds: Number(run.paused_seconds || 0) + pauseSeconds,
-      paused_at: null,
-    }).eq("id", run.id).eq("status", "active").not("paused_at", "is", null);
+    if (run.status !== "active" || !run.paused_at)
+      return fail(req, 409, "A fase não está pausada.");
+    const pauseSeconds = Math.max(
+      0,
+      (Date.now() - Date.parse(run.paused_at)) / 1000,
+    );
+    const { error } = await admin
+      .from("ranking_runs")
+      .update({
+        paused_seconds: Number(run.paused_seconds || 0) + pauseSeconds,
+        paused_at: null,
+      })
+      .eq("id", run.id)
+      .eq("status", "active")
+      .not("paused_at", "is", null);
     if (error) return fail(req, 500, "Não foi possível retomar a validação.");
     return response(req, { ok: true });
   }
 
   if (action === "phase-fail") {
-    if (run.status !== "active") return fail(req, 409, "A sessão já foi concluída.");
-    if (!run.phase_started_at) return response(req, { ok: true, activeSeconds: 0, totalActiveSeconds: Number(run.active_seconds || 0) });
-    if (!Number.isInteger(body.phase) || body.phase !== run.current_phase || run.current_phase < 0 || run.current_phase >= PHASES.length) {
+    if (run.status !== "active")
+      return fail(req, 409, "A sessão já foi concluída.");
+    if (!run.phase_started_at)
+      return response(req, {
+        ok: true,
+        activeSeconds: 0,
+        totalActiveSeconds: Number(run.active_seconds || 0),
+      });
+    if (
+      !Number.isInteger(body.phase) ||
+      body.phase !== run.current_phase ||
+      run.current_phase < 0 ||
+      run.current_phase >= PHASES.length
+    ) {
       return fail(req, 409, "A sequência de fases não corresponde à sessão.");
     }
-    if (typeof body.inputs !== "string" || body.inputs.length > 12_000 || typeof body.accentsOptional !== "boolean") {
+    if (
+      typeof body.inputs !== "string" ||
+      body.inputs.length > 12_000 ||
+      typeof body.accentsOptional !== "boolean"
+    ) {
       return fail(req, 400, "Trilha de teclas inválida.");
     }
-    if (typeof body.activeSeconds !== "number" || !Number.isFinite(body.activeSeconds) || body.activeSeconds < 0) {
+    if (
+      typeof body.activeSeconds !== "number" ||
+      !Number.isFinite(body.activeSeconds) ||
+      body.activeSeconds < 0
+    ) {
       return fail(req, 400, "Duração ativa inválida.");
     }
-    if (body.reason !== "time" && body.reason !== "reach" && body.reason !== "manual") return fail(req, 400, "Motivo de encerramento inválido.");
-    if (body.reason === "manual" && !run.paused_at) return fail(req, 400, "Pause a fase antes de recomeçá-la.");
+    if (
+      body.reason !== "time" &&
+      body.reason !== "reach" &&
+      body.reason !== "manual"
+    )
+      return fail(req, 400, "Motivo de encerramento inválido.");
+    if (body.reason === "manual" && !run.paused_at)
+      return fail(req, 400, "Pause a fase antes de recomeçá-la.");
 
-    const phaseText = Array.from(PHASE_TEXTS[run.difficulty as Difficulty][run.current_phase]);
+    const phaseText = Array.from(
+      PHASE_TEXTS[run.difficulty as Difficulty][run.current_phase],
+    );
     const typedKeys = Array.from(body.inputs);
-    if (typedKeys.length > phaseText.length * 6) return fail(req, 400, "Trilha de teclas excede o limite da fase.");
+    if (typedKeys.length > phaseText.length * 6)
+      return fail(req, 400, "Trilha de teclas excede o limite da fase.");
     let position = 0;
     let errors = 0;
     let correct = 0;
     for (const key of typedKeys) {
-      if (position >= phaseText.length) return fail(req, 400, "Há teclas registradas após o fim do texto.");
-      if (matches(key, phaseText[position], body.accentsOptional)) { position++; correct++; }
-      else errors++;
+      if (position >= phaseText.length)
+        return fail(req, 400, "Há teclas registradas após o fim do texto.");
+      if (matches(key, phaseText[position], body.accentsOptional)) {
+        position++;
+        correct++;
+      } else errors++;
     }
 
     const now = Date.now();
-    const pausedSeconds = Number(run.paused_seconds || 0) + (run.paused_at ? Math.max(0, (now - Date.parse(run.paused_at)) / 1000) : 0);
-    const serverActiveSeconds = Math.max(0, (now - Date.parse(run.phase_started_at)) / 1000 - pausedSeconds);
-    const activeSeconds = Math.round(Math.max(serverActiveSeconds - NETWORK_TIME_TOLERANCE_SECONDS, Math.min(body.activeSeconds, serverActiveSeconds + NETWORK_TIME_TOLERANCE_SECONDS)) * 1000) / 1000;
+    const pausedSeconds =
+      Number(run.paused_seconds || 0) +
+      (run.paused_at
+        ? Math.max(0, (now - Date.parse(run.paused_at)) / 1000)
+        : 0);
+    const serverActiveSeconds = Math.max(
+      0,
+      (now - Date.parse(run.phase_started_at)) / 1000 - pausedSeconds,
+    );
+    const activeSeconds =
+      Math.round(
+        Math.max(
+          serverActiveSeconds - NETWORK_TIME_TOLERANCE_SECONDS,
+          Math.min(
+            body.activeSeconds,
+            serverActiveSeconds + NETWORK_TIME_TOLERANCE_SECONDS,
+          ),
+        ) * 1000,
+      ) / 1000;
     const settings = SETTINGS[run.difficulty as Difficulty];
-    const remaining = settings.seconds - activeSeconds - errors * settings.errorPenalty + correct * settings.correctBonus;
+    const remaining =
+      settings.seconds -
+      activeSeconds -
+      errors * settings.errorPenalty +
+      correct * settings.correctBonus;
     const defenseLimit = 5 + (run.extra_life ? 1 : 0);
-    if (body.reason === "time" && remaining > 0.75) return fail(req, 400, "O tempo da fase ainda não terminou.");
-    if (body.reason === "reach" && errors < defenseLimit) return fail(req, 400, "Os pontos de defesa ainda não se esgotaram.");
-    if (position === phaseText.length) return fail(req, 400, "Uma fase concluída deve ser enviada para validação, não como tentativa perdida.");
-    const totalActiveSeconds = Math.round((Number(run.active_seconds || 0) + activeSeconds) * 1000) / 1000;
-    const updateAttempt = admin.from("ranking_runs").update({
-      active_seconds: totalActiveSeconds,
-      phase_started_at: null,
-      paused_at: null,
-      paused_seconds: 0,
-    }).eq("id", run.id).eq("status", "active").eq("current_phase", run.current_phase).eq("phase_started_at", run.phase_started_at);
-    const guardedAttempt = run.paused_at ? updateAttempt.eq("paused_at", run.paused_at) : updateAttempt.is("paused_at", null);
-    const { data: ended, error } = await guardedAttempt.select("id").maybeSingle();
-    if (error) return fail(req, 500, "Não foi possível salvar o tempo da tentativa.");
-    if (!ended) return fail(req, 409, "A tentativa já foi encerrada ou a sessão mudou.");
+    if (body.reason === "time" && remaining > 0.75)
+      return fail(req, 400, "O tempo da fase ainda não terminou.");
+    if (body.reason === "reach" && errors < defenseLimit)
+      return fail(req, 400, "Os pontos de defesa ainda não se esgotaram.");
+    if (position === phaseText.length)
+      return fail(
+        req,
+        400,
+        "Uma fase concluída deve ser enviada para validação, não como tentativa perdida.",
+      );
+    const totalActiveSeconds =
+      Math.round((Number(run.active_seconds || 0) + activeSeconds) * 1000) /
+      1000;
+    const updateAttempt = admin
+      .from("ranking_runs")
+      .update({
+        active_seconds: totalActiveSeconds,
+        phase_started_at: null,
+        paused_at: null,
+        paused_seconds: 0,
+      })
+      .eq("id", run.id)
+      .eq("status", "active")
+      .eq("current_phase", run.current_phase)
+      .eq("phase_started_at", run.phase_started_at);
+    const guardedAttempt = run.paused_at
+      ? updateAttempt.eq("paused_at", run.paused_at)
+      : updateAttempt.is("paused_at", null);
+    const { data: ended, error } = await guardedAttempt
+      .select("id")
+      .maybeSingle();
+    if (error)
+      return fail(req, 500, "Não foi possível salvar o tempo da tentativa.");
+    if (!ended)
+      return fail(req, 409, "A tentativa já foi encerrada ou a sessão mudou.");
     return response(req, { ok: true, activeSeconds, totalActiveSeconds });
   }
 
@@ -262,21 +509,43 @@ Deno.serve(async (req: Request) => {
 
   if (run.status === "completed") {
     const entry = await getEntry(run.id);
-    return response(req, { ok: true, completed: true, score: run.score, entry, totalActiveSeconds: entry?.active_seconds ?? Number(run.active_seconds || 0) });
+    return response(req, {
+      ok: true,
+      completed: true,
+      score: run.score,
+      entry,
+      totalActiveSeconds:
+        entry?.active_seconds ?? Number(run.active_seconds || 0),
+    });
   }
-  if (!Number.isInteger(body.phase) || body.phase !== run.current_phase || run.current_phase < 0 || run.current_phase >= PHASES.length) {
+  if (
+    !Number.isInteger(body.phase) ||
+    body.phase !== run.current_phase ||
+    run.current_phase < 0 ||
+    run.current_phase >= PHASES.length
+  ) {
     return fail(req, 409, "A sequência de fases não corresponde à sessão.");
   }
-  if (!run.phase_started_at || run.paused_at) return fail(req, 409, "A fase não foi iniciada ou ainda está pausada.");
-  if (typeof body.inputs !== "string" || body.inputs.length > 12_000) return fail(req, 400, "Trilha de teclas inválida.");
-  if (typeof body.accentsOptional !== "boolean") return fail(req, 400, "Preferência de acentos inválida.");
-  if (typeof body.activeSeconds !== "number" || !Number.isFinite(body.activeSeconds) || body.activeSeconds < 0) {
+  if (!run.phase_started_at || run.paused_at)
+    return fail(req, 409, "A fase não foi iniciada ou ainda está pausada.");
+  if (typeof body.inputs !== "string" || body.inputs.length > 12_000)
+    return fail(req, 400, "Trilha de teclas inválida.");
+  if (typeof body.accentsOptional !== "boolean")
+    return fail(req, 400, "Preferência de acentos inválida.");
+  if (
+    typeof body.activeSeconds !== "number" ||
+    !Number.isFinite(body.activeSeconds) ||
+    body.activeSeconds < 0
+  ) {
     return fail(req, 400, "Duração ativa inválida.");
   }
 
-  const phaseText = Array.from(PHASE_TEXTS[run.difficulty as Difficulty][run.current_phase]);
+  const phaseText = Array.from(
+    PHASE_TEXTS[run.difficulty as Difficulty][run.current_phase],
+  );
   const typedKeys = Array.from(body.inputs);
-  if (typedKeys.length > phaseText.length * 6) return fail(req, 400, "Trilha de teclas excede o limite da fase.");
+  if (typedKeys.length > phaseText.length * 6)
+    return fail(req, 400, "Trilha de teclas excede o limite da fase.");
 
   let position = 0;
   let errors = 0;
@@ -284,7 +553,8 @@ Deno.serve(async (req: Request) => {
   let streak = 0;
   let earnedPoints = 0;
   for (const key of typedKeys) {
-    if (position >= phaseText.length) return fail(req, 400, "Há teclas registradas após o fim do texto.");
+    if (position >= phaseText.length)
+      return fail(req, 400, "Há teclas registradas após o fim do texto.");
     if (matches(key, phaseText[position], body.accentsOptional)) {
       position++;
       correct++;
@@ -295,42 +565,88 @@ Deno.serve(async (req: Request) => {
       streak = 0;
     }
   }
-  if (position !== phaseText.length) return fail(req, 400, "O texto da fase não foi concluído.");
+  if (position !== phaseText.length)
+    return fail(req, 400, "O texto da fase não foi concluído.");
   const defenseLimit = 5 + (run.extra_life ? 1 : 0);
-  if (errors >= defenseLimit) return fail(req, 400, "A fase excedeu os pontos de defesa disponíveis.");
+  if (errors >= defenseLimit)
+    return fail(req, 400, "A fase excedeu os pontos de defesa disponíveis.");
 
   const now = Date.now();
-  const serverActiveSeconds = Math.max(0, (now - Date.parse(run.phase_started_at)) / 1000 - Number(run.paused_seconds || 0));
-  const activeSeconds = Math.round(Math.max(serverActiveSeconds - NETWORK_TIME_TOLERANCE_SECONDS, Math.min(body.activeSeconds, serverActiveSeconds + NETWORK_TIME_TOLERANCE_SECONDS)) * 1000) / 1000;
+  const serverActiveSeconds = Math.max(
+    0,
+    (now - Date.parse(run.phase_started_at)) / 1000 -
+      Number(run.paused_seconds || 0),
+  );
+  const activeSeconds =
+    Math.round(
+      Math.max(
+        serverActiveSeconds - NETWORK_TIME_TOLERANCE_SECONDS,
+        Math.min(
+          body.activeSeconds,
+          serverActiveSeconds + NETWORK_TIME_TOLERANCE_SECONDS,
+        ),
+      ) * 1000,
+    ) / 1000;
   // Rejeita conclusões em velocidade incompatível até com digitação muito rápida.
   const minimumSeconds = Math.max(3, typedKeys.length * 0.05);
-  if (activeSeconds + 0.25 < minimumSeconds) return fail(req, 400, "A conclusão foi rápida demais para validar a trilha de teclas.");
+  if (activeSeconds + 0.25 < minimumSeconds)
+    return fail(
+      req,
+      400,
+      "A conclusão foi rápida demais para validar a trilha de teclas.",
+    );
 
   const settings = SETTINGS[run.difficulty as Difficulty];
-  const remaining = settings.seconds - activeSeconds - errors * settings.errorPenalty + correct * settings.correctBonus;
-  if (remaining <= 0) return fail(req, 400, "O tempo da fase se esgotou antes da conclusão.");
-  const wordsPerMinute = (correct / 5) / (activeSeconds / 60);
+  const remaining =
+    settings.seconds -
+    activeSeconds -
+    errors * settings.errorPenalty +
+    correct * settings.correctBonus;
+  if (remaining <= 0)
+    return fail(req, 400, "O tempo da fase se esgotou antes da conclusão.");
+  const wordsPerMinute = correct / 5 / (activeSeconds / 60);
   const accuracy = typedKeys.length ? correct / typedKeys.length : 0;
-  const speedBonus = Math.min(SPEED_BONUS_CAP, Math.round(wordsPerMinute * SPEED_BONUS_PER_WPM));
+  const speedBonus = Math.min(
+    SPEED_BONUS_CAP,
+    Math.round(wordsPerMinute * SPEED_BONUS_PER_WPM),
+  );
   const precisionBonus = Math.round(accuracy * PRECISION_BONUS_CAP);
-  const totalActiveSeconds = Math.round((Number(run.active_seconds || 0) + activeSeconds) * 1000) / 1000;
-  const perfectPhases = Number(run.perfect_phases || 0) + (errors === 0 ? 1 : 0);
+  const totalActiveSeconds =
+    Math.round((Number(run.active_seconds || 0) + activeSeconds) * 1000) / 1000;
+  const perfectPhases =
+    Number(run.perfect_phases || 0) + (errors === 0 ? 1 : 0);
   const extraLife = Boolean(run.extra_life) || perfectPhases >= 3;
-  const phaseBonus = Math.ceil(remaining) * 10 + (defenseLimit - errors) * 100 + speedBonus + precisionBonus;
+  const phaseBonus =
+    Math.ceil(remaining) * 10 +
+    (defenseLimit - errors) * 100 +
+    speedBonus +
+    precisionBonus;
   const isFinal = run.current_phase === PHASES.length - 1;
-  const campaignTimeBonus = isFinal ? Math.max(0, CAMPAIGN_TIME_BONUS_CAP - Math.floor(totalActiveSeconds * CAMPAIGN_TIME_BONUS_PER_SECOND)) : 0;
+  const campaignTimeBonus = isFinal
+    ? Math.max(
+        0,
+        CAMPAIGN_TIME_BONUS_CAP -
+          Math.floor(totalActiveSeconds * CAMPAIGN_TIME_BONUS_PER_SECOND),
+      )
+    : 0;
   const totalBonus = phaseBonus + campaignTimeBonus;
   const totalScore = Number(run.score || 0) + earnedPoints + totalBonus;
   const completedChars = Number(run.correct_chars || 0) + correct;
-  const phaseDetails = [...(Array.isArray(run.phase_details) ? run.phase_details : []), {
-    phase: run.current_phase,
-    phase_name: PHASE_NAMES[run.current_phase],
-    ppm: Math.round(wordsPerMinute * 100) / 100,
-    accuracy: Math.round(accuracy * 10000) / 100,
-    active_seconds: activeSeconds,
-    points: earnedPoints + totalBonus,
-  }];
-  const campaignPpm = totalActiveSeconds > 0 ? Math.round((completedChars / 5) / (totalActiveSeconds / 60) * 100) / 100 : 0;
+  const phaseDetails = [
+    ...(Array.isArray(run.phase_details) ? run.phase_details : []),
+    {
+      phase: run.current_phase,
+      phase_name: PHASE_NAMES[run.current_phase],
+      ppm: Math.round(wordsPerMinute * 100) / 100,
+      accuracy: Math.round(accuracy * 10000) / 100,
+      active_seconds: activeSeconds,
+      points: earnedPoints + totalBonus,
+    },
+  ];
+  const campaignPpm =
+    totalActiveSeconds > 0
+      ? Math.round((completedChars / 5 / (totalActiveSeconds / 60)) * 100) / 100
+      : 0;
 
   const update = {
     score: totalScore,
@@ -346,25 +662,90 @@ Deno.serve(async (req: Request) => {
     status: isFinal ? "completed" : "active",
     completed_at: isFinal ? new Date(now).toISOString() : null,
   };
-  const { data: updated, error: updateError } = await admin.from("ranking_runs").update(update)
-    .eq("id", run.id).eq("status", "active").eq("current_phase", run.current_phase)
-    .eq("phase_started_at", run.phase_started_at).select("id").maybeSingle();
-  if (updateError) return fail(req, 500, "Não foi possível salvar a validação da fase.");
+  const { data: updated, error: updateError } = await admin
+    .from("ranking_runs")
+    .update(update)
+    .eq("id", run.id)
+    .eq("status", "active")
+    .eq("current_phase", run.current_phase)
+    .eq("phase_started_at", run.phase_started_at)
+    .select("id")
+    .maybeSingle();
+  if (updateError)
+    return fail(req, 500, "Não foi possível salvar a validação da fase.");
   if (!updated) {
-    const { data: latest } = await admin.from("ranking_runs").select("current_phase, score, status, active_seconds")
-      .eq("id", run.id).maybeSingle();
-    if (latest && (latest.current_phase > run.current_phase || latest.status === "completed")) {
-      const entry = latest.status === "completed" ? await getEntry(run.id) : null;
-      return response(req, { ok: true, completed: latest.status === "completed", score: latest.score, entry, totalActiveSeconds: latest.active_seconds });
+    const { data: latest } = await admin
+      .from("ranking_runs")
+      .select("current_phase, score, status, active_seconds")
+      .eq("id", run.id)
+      .maybeSingle();
+    if (
+      latest &&
+      (latest.current_phase > run.current_phase ||
+        latest.status === "completed")
+    ) {
+      const entry =
+        latest.status === "completed" ? await getEntry(run.id) : null;
+      return response(req, {
+        ok: true,
+        completed: latest.status === "completed",
+        score: latest.score,
+        entry,
+        totalActiveSeconds: latest.active_seconds,
+      });
     }
-    return fail(req, 409, "A fase já foi recebida ou a sessão mudou. Atualize o ranking ao concluir.");
+    return fail(
+      req,
+      409,
+      "A fase já foi recebida ou a sessão mudou. Atualize o ranking ao concluir.",
+    );
   }
 
-  if (!isFinal) return response(req, {
+  if (!isFinal)
+    return response(req, {
+      ok: true,
+      completed: false,
+      phase: run.current_phase,
+      score: totalScore,
+      phaseBonus,
+      speedBonus,
+      precisionBonus,
+      campaignTimeBonus,
+      totalBonus,
+      phaseActiveSeconds: activeSeconds,
+      totalActiveSeconds,
+      remainingSeconds: Math.ceil(remaining),
+      perfectPhases,
+      extraLife,
+    });
+
+  // O índice UNIQUE(run_id) torna a finalização idempotente para a mesma partida.
+  const { error: entryError } = await admin.from("leaderboard_entries").upsert(
+    {
+      run_id: run.id,
+      player_name: run.player_name,
+      score: totalScore,
+      difficulty: run.difficulty,
+      active_seconds: totalActiveSeconds,
+      total_ppm: campaignPpm,
+      phase_details: phaseDetails,
+      completed_at: new Date(now).toISOString(),
+    },
+    { onConflict: "run_id", ignoreDuplicates: true },
+  );
+  if (entryError)
+    return fail(
+      req,
+      500,
+      "A campanha foi validada, mas não foi possível gravar no ranking.",
+    );
+  const entry = await getEntry(run.id);
+  return response(req, {
     ok: true,
-    completed: false,
-    phase: run.current_phase,
+    completed: true,
     score: totalScore,
+    totalPpm: campaignPpm,
+    phaseDetails,
     phaseBonus,
     speedBonus,
     precisionBonus,
@@ -375,20 +756,6 @@ Deno.serve(async (req: Request) => {
     remainingSeconds: Math.ceil(remaining),
     perfectPhases,
     extraLife,
+    entry,
   });
-
-  // O índice UNIQUE(run_id) torna a finalização idempotente para a mesma partida.
-  const { error: entryError } = await admin.from("leaderboard_entries").upsert({
-    run_id: run.id,
-    player_name: run.player_name,
-    score: totalScore,
-    difficulty: run.difficulty,
-    active_seconds: totalActiveSeconds,
-    total_ppm: campaignPpm,
-    phase_details: phaseDetails,
-    completed_at: new Date(now).toISOString(),
-  }, { onConflict: "run_id", ignoreDuplicates: true });
-  if (entryError) return fail(req, 500, "A campanha foi validada, mas não foi possível gravar no ranking.");
-  const entry = await getEntry(run.id);
-  return response(req, { ok: true, completed: true, score: totalScore, totalPpm: campaignPpm, phaseDetails, phaseBonus, speedBonus, precisionBonus, campaignTimeBonus, totalBonus, phaseActiveSeconds: activeSeconds, totalActiveSeconds, remainingSeconds: Math.ceil(remaining), perfectPhases, extraLife, entry });
 });

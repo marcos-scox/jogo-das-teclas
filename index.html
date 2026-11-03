@@ -46,6 +46,13 @@
           <span class="mode-d">Você define o tempo e digita o máximo que conseguir com precisão.</span>
           <span class="meta">10 textos, de 30 segundos a 10 minutos</span>
         </button>
+        <button class="mode online" type="button" data-mode="4">
+          <span class="legend" aria-hidden="true">4</span>
+          <span class="mode-icon icon-online" aria-hidden="true"><i></i><i></i></span>
+          <span class="mode-t">Duelo online</span>
+          <span class="mode-d">Crie uma sala ou entre com um código. Os dois digitam a mesma missão e vence quem terminar primeiro.</span>
+          <span class="meta">2 jogadores · tempo real</span>
+        </button>
         <button class="mode battle" type="button" data-mode="3">
           <span class="legend" aria-hidden="true">3</span>
           <span class="mode-icon icon-battle" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -199,6 +206,15 @@
       <p class="hint"><kbd>Enter</kbd> repete o texto. PPM conta 5 caracteres certos como uma palavra.</p>
     </section>
 
+    <!-- DUELO ONLINE -->
+    <section id="v-online" class="view" hidden>
+      <div class="page-intro online-intro">
+        <span class="eyebrow">DISPUTA EM TEMPO REAL</span>
+        <h1 class="page-title">Duelo online</h1>
+        <p class="page-copy">Crie uma sala e envie o código para alguém, ou entre em uma sala existente. A missão é igual para os dois.</p>
+      </div>
+      <section class="online-panel" id="online-panel" aria-live="polite"></section>
+    </section>
     <!-- BATALHA -->
     <section id="v-game" class="view" hidden>
       <div class="bar">

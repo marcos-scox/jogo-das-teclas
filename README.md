@@ -8,7 +8,7 @@ Jogue online em [Jogo das Teclas](https://marcos-scox.github.io/jogo-das-teclas/
 
 ## Interface
 
-A interface usa tema azul-marinho com detalhes roxos e se adapta a celular e computador. O menu mantém os modos Livre, Contra o relógio e Batalha; o Hank foi removido. Início mostra uma prévia com os cinco primeiros resultados por dificuldade, e a opção **Ranking** abre a classificação completa, carregada em páginas a partir dos dados reais do Supabase. Em **Configurações** ficam as preferências de som e acentuação e os créditos do projeto.
+A interface usa tema azul-marinho com detalhes roxos e se adapta a celular e computador. O menu inclui os modos Livre, Contra o relógio, Batalha e **Duelo online**; o Hank foi removido. Início mostra uma prévia com os cinco primeiros resultados por dificuldade, e a opção **Ranking** abre a classificação completa, carregada em páginas a partir dos dados reais do Supabase. Em **Configurações** ficam as preferências de som e acentuação e os créditos do projeto.
 
 Desenvolvido por Marcos Vinicius. [GitHub](https://github.com/marcos-scox) · [Repositório](https://github.com/marcos-scox/jogo-das-teclas).
 
@@ -74,3 +74,8 @@ Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/g
 - **Difícil:** 1 minuto por fase; cada erro desconta 5 segundos e cada tecla correta acrescenta 1 segundo. Cada missão tem 5 parágrafos; o texto original de cada fase foi mantido como abertura e ampliado. Pressione Enter ao fim de cada parágrafo.
 
 Após completar três fases sem erros (acumuladas, não necessariamente consecutivas), o jogador recebe um sexto ponto de defesa para as fases restantes daquela campanha. A dificuldade é escolhida antes de começar e permanece fixa até voltar ao menu principal.
+
+## Duelo online
+O modo Duelo online cria salas temporárias com um código de seis caracteres. O anfitrião escolhe a dificuldade, compartilha o código, e o segundo jogador entra pelo mesmo menu. Depois que os dois marcam **Estou pronto**, uma contagem regressiva sincronizada começa e ambos digitam a mesma missão; o primeiro a concluir vence. O progresso do adversário é atualizado por polling seguro na Edge Function, enquanto tokens temporários protegem a sala e a tabela privada não fica exposta ao navegador.
+
+A infraestrutura está em `supabase/migrations/20261105_online_duels.sql`; os endpoints `room-create`, `room-join`, `room-state`, `room-ready`, `room-progress` e `room-finish` ficam na função `ranking-api`.

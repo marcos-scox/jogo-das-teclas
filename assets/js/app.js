@@ -306,7 +306,7 @@ trap.addEventListener('input', e => { if(composing || e.isComposing) return; flu
 trap.addEventListener('keydown', e => {
   if(e.isComposing || composing) return;
   if(e.key === 'Backspace'){ e.preventDefault(); routeBack(e.ctrlKey || e.altKey || e.metaKey); }
-  else if(e.key === 'Enter'){ e.preventDefault(); if(view === 'game' && G.state === 'play') routeChar('\n'); }
+  else if(e.key === 'Enter'){ e.preventDefault(); if(view === 'game' && G.state === 'play') routeChar('\n'); else if(view === 'online' && Online.started) routeChar('\n'); }
 });
 trap.addEventListener('focus', () => $$('.tx-box').forEach(b => b.classList.remove('blurred')));
 trap.addEventListener('blur', () => {
@@ -321,6 +321,7 @@ $$('.tx-box').forEach(b => {
 function routeChar(ch){
   if(view === 'type' && session && session.typer) session.typer.input(ch);
   else if(view === 'game' && G.state === 'play' && G.typer) G.typer.input(ch);
+  else if(view === 'online' && Online.started && Online.typer) Online.typer.input(ch);
 }
 function routeBack(word){
   if(view === 'type' && session && session.typer) session.typer.backspace(word);
@@ -546,6 +547,32 @@ document.addEventListener('click', event => { const button = event.target.closes
 $('#phase-modal .phase-modal-close').addEventListener('click', () => $('#phase-modal').close());
 $('#phase-modal').addEventListener('click', event => { if(event.target === $('#phase-modal')) $('#phase-modal').close(); });
 
+/* ===================== DUELO ONLINE ===================== */
+const Online = {
+  token:null, slot:0, state:null, poller:0, typer:null, started:false, finished:false,
+  panel:$('#online-panel'),
+  async api(action, data={}){ return Ranking.api({action, ...data}); },
+  stop(){ if(this.poller){ clearInterval(this.poller); this.poller=0; } if(this.typer) this.typer=null; this.started=false; this.finished=false; },
+  open(){ this.stop(); this.token=null; this.slot=0; this.state=null; show('online'); this.renderLobby(); },
+  renderLobby(message=''){
+    this.panel.innerHTML=`<div class="online-card"><div class="online-card-head"><div><span class="section-kicker">COMECE UMA PARTIDA</span><h2>Uma missão. Dois teclados.</h2><p>Escolha a dificuldade e compartilhe o código com seu adversário.</p></div><span class="online-mark">VS</span></div><label class="online-field">Seu nome<input id="online-name" maxlength="24" autocomplete="nickname" placeholder="Ex.: Ana"></label><label class="online-field">Dificuldade<select id="online-difficulty"><option value="easy">Fácil · texto curto</option><option value="medium">Médio · números e sinais</option><option value="hard">Difícil · missão completa</option></select></label><div class="online-actions"><button class="btn primary" id="online-create" type="button">Criar sala</button><div class="online-divider"><span>ou</span></div><label class="online-field">Código da sala<input id="online-code" maxlength="6" autocapitalize="characters" placeholder="ABC123"></label><button class="btn" id="online-join" type="button">Entrar na sala</button></div><p class="online-status" id="online-status">${esc(message)}</p></div>`;
+    $('#online-create').onclick=()=>this.create(); $('#online-join').onclick=()=>this.join();
+  },
+  name(){ return ($('#online-name')?.value || '').trim().replace(/\s+/gu,' '); },
+  async create(){ const name=this.name(), difficulty=$('#online-difficulty').value; if(name.length<2||name.length>24){ this.renderLobby('Digite um nome entre 2 e 24 caracteres.'); return; } await this.enter('room-create',{playerName:name,difficulty}); },
+  async join(){ const name=this.name(), code=($('#online-code')?.value||'').trim().toUpperCase(); if(name.length<2||name.length>24){ this.renderLobby('Digite um nome entre 2 e 24 caracteres.'); return; } if(!/^[A-Z0-9]{6}$/.test(code)){ this.renderLobby('O código precisa ter 6 caracteres.'); return; } await this.enter('room-join',{playerName:name,code}); },
+  async enter(action,data){ this.panel.innerHTML='<div class="online-card"><p class="online-status">Conectando à sala…</p></div>'; try{ const r=await this.api(action,data); this.token=r.token; this.slot=r.slot; this.state=r.state; this.renderRoom(); this.startPolling(); }catch(e){ this.renderLobby(e.message); } },
+  startPolling(){ this.stopPollOnly(); this.poller=setInterval(()=>this.refresh(),700); },
+  stopPollOnly(){ if(this.poller){clearInterval(this.poller);this.poller=0;} },
+  async refresh(){ if(!this.token||!this.state) return; try{ const r=await this.api('room-state',{code:this.state.code,token:this.token}); this.state=r.state||r; this.renderRoom(true); if(this.state.status==='countdown' && Date.parse(this.state.startedAt)<=Date.now()) this.beginRace(); if(this.state.status==='finished') this.finishScreen(); }catch(e){ $('#online-status')?.replaceChildren(document.createTextNode(e.message)); } },
+  player(slot){ return (this.state?.players||[]).find(p=>Number(p.slot)===Number(slot)); },
+  renderRoom(silent=false){ const a=this.player(1), b=this.player(2); if(!silent||!$('#online-room')) this.panel.innerHTML=`<div class="online-card" id="online-room"><div class="online-card-head"><div><span class="section-kicker">SALA <b class="room-code">${esc(this.state.code)}</b></span><h2>${this.state.status==='waiting'?'Aguardando o adversário':'Prepare os dedos'}</h2><p>${this.state.status==='waiting'?'Compartilhe o código abaixo e marque pronto quando o outro jogador entrar.':'Os dois jogadores estão na mesma missão.'}</p></div><button class="ghost" id="online-copy" type="button">Copiar código</button></div><div class="duel-players"><div class="duel-player"><strong>${esc(a?.player_name||'Você')}</strong><span>${a?.ready?'Pronto':'Aguardando'}</span><i style="width:${Math.min(this.state.text.length,a?.progress||0)/(this.state.text.length)*100}%"></i></div><div class="duel-vs">VS</div><div class="duel-player"><strong>${esc(b?.player_name||'Convide alguém')}</strong><span>${b?.ready?'Pronto':(b?'Aguardando':'Vaga livre')}</span><i style="width:${Math.min(this.state.text.length,b?.progress||0)/(this.state.text.length)*100}%"></i></div></div><div class="online-actions"><button class="btn primary" id="online-ready" type="button" ${this.state.status!=='waiting'?'disabled':''}>${this.player(this.slot)?.ready?'Pronto!':'Estou pronto'}</button><button class="btn" id="online-leave" type="button">Sair</button></div><p class="online-status" id="online-status">${this.state.status==='waiting'?(b?'Quando os dois estiverem prontos, a contagem começa.':'Aguardando o segundo jogador…'):'A partida vai começar!'}</p></div>`; if($('#online-copy')) $('#online-copy').onclick=()=>navigator.clipboard?.writeText(this.state.code); if($('#online-ready')) $('#online-ready').onclick=()=>this.ready(); if($('#online-leave')) $('#online-leave').onclick=()=>this.open(); },
+  async ready(){ try{ const r=await this.api('room-ready',{code:this.state.code,token:this.token,ready:true}); this.state=r.state||r; this.renderRoom(); }catch(e){ this.renderRoom(e.message); } },
+  beginRace(){ if(this.started||this.state.status==='finished') return; this.started=true; this.stopPollOnly(); this.panel.innerHTML=`<div class="online-card online-race" id="online-race"><div class="race-head"><div><span class="section-kicker">DUELO EM ANDAMENTO</span><h2>${esc(this.player(1)?.player_name||'Jogador 1')} <span>vs</span> ${esc(this.player(2)?.player_name||'Jogador 2')}</h2></div><strong id="online-count">3</strong></div><div class="duel-progress"><div><span id="online-you-label">Você</span><i id="online-you-bar"></i></div><div><span>Adversário</span><i id="online-opp-bar"></i></div></div><div class="tx-box" id="online-text-box"><div class="tx-view" id="online-text"></div></div><p class="online-status" id="online-status">Prepare-se…</p></div>`; const text=this.state.text; this.typer=new Typer($('#online-text'),text,{strict:true,recordInputs:true,onCorrect:()=>this.push(false),onWrong:()=>this.push(false),onDone:()=>this.push(true)}); placeTrap($('#online-text-box')); focusTrap(); let n=3; const t=setInterval(()=>{ n--; if($('#online-count')) $('#online-count').textContent=n>0?n:'VAI!'; if(n<=0){clearInterval(t);this.poller=setInterval(()=>this.refreshRace(),500);}},1000); },
+  async push(done){ if(!this.typer||this.finished) return; const payload={code:this.state.code,token:this.token,progress:this.typer.pos,correct:this.typer.correct,mistakes:this.typer.wrongKeys}; try{ const r=await this.api(done?'room-finish':'room-progress',payload); this.state=r.state||r; if(done) this.finishScreen(); }catch(e){ if($('#online-status')) $('#online-status').textContent=e.message; } },
+  async refreshRace(){ if(!this.state||!this.token) return; try{ const r=await this.api('room-state',{code:this.state.code,token:this.token}); this.state=r.state||r; const me=this.player(this.slot), opp=this.player(this.slot===1?2:1); const total=this.state.text.length; const y=$('#online-you-bar'), o=$('#online-opp-bar'); if(y)y.style.width=Math.round((me?.progress||0)/total*100)+'%'; if(o)o.style.width=Math.round((opp?.progress||0)/total*100)+'%'; if(this.state.status==='finished') this.finishScreen(); }catch(e){} },
+  finishScreen(){ if(this.finished)return; this.finished=true; this.stopPollOnly(); const won=Number(this.state.winnerSlot)===Number(this.slot); this.panel.innerHTML=`<div class="online-card online-result"><span class="section-kicker">RESULTADO DO DUELO</span><h2>${won?'Vitória!':'Fim de partida'}</h2><p>${won?'Você terminou a missão primeiro.':'Seu adversário terminou primeiro desta vez.'}</p><div class="duel-final-score"><strong>${this.player(this.slot)?.correct||0}</strong><span>caracteres certos</span><strong>${this.player(this.slot===1?2:1)?.correct||0}</strong><span>do adversário</span></div><button class="btn primary" id="online-again" type="button">Novo duelo</button></div>`; $('#online-again').onclick=()=>this.open(); }
+};
 /* preferências */
 function syncToggles(){
   const p = Store.data.prefs;
@@ -577,6 +604,7 @@ let timedSeconds = [30,60,120,180,300].includes(Store.data.prefs.timed) || (Stor
 function openMode(n){
   Sfx.unlock();
   if(n === 3){ startGame(); return; }
+  if(n === 4){ Online.open(); return; }
   buildList(n);
   show('list');
 }
