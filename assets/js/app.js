@@ -313,6 +313,13 @@ trap.addEventListener('blur', () => {
   $$('.tx-box').forEach(b => b.classList.add('blurred'));
   if(view === 'game' && G.state === 'play') gPause();
 });
+window.addEventListener('keydown', e => {
+  if(view !== 'online' || !Online.canType || !Online.typer || e.isComposing || composing) return;
+  if(document.activeElement === trap) return;
+  if(e.key === 'Backspace' || e.key === 'Enter' || e.key.length !== 1) return;
+  e.preventDefault();
+  routeChar(e.key);
+}, true);
 $$('.tx-box').forEach(b => {
   b.addEventListener('mousedown', e => { e.preventDefault(); focusTrap(); });
   b.addEventListener('click', () => focusTrap());
