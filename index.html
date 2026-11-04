@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
-<link rel="stylesheet" href="assets/css/styles.css?v=7-identity">
+<link rel="stylesheet" href="assets/css/styles.css?v=8-redesign-complete">
 </head>
 <body>
 <div class="wrap">
@@ -24,43 +24,52 @@
   <main>
     <!-- INÍCIO -->
     <section id="v-home" class="view">
-      <div class="hero">
-        <div class="brand-kicker"><span></span> ARCADE DE DIGITAÇÃO <span></span></div>
-        <h1 class="caps" aria-label="Toque Certo">
-          <span class="word" aria-hidden="true"><span class="cap" data-k="t">T</span><span class="cap" data-k="o">O</span><span class="cap" data-k="q">Q</span><span class="cap" data-k="u">U</span><span class="cap" data-k="e">E</span></span>
-          <span class="word" aria-hidden="true"><span class="cap" data-k="c">C</span><span class="cap" data-k="e">E</span><span class="cap" data-k="r">R</span><span class="cap" data-k="t">T</span><span class="cap" data-k="o">O</span></span>
-        </h1>
-        <p class="hero-tagline">Cada tecla é uma jogada.</p>
-        <p class="lead">Treine sua digitação em português: textos sem pressa, provas contra o relógio e uma batalha em que cada tecla certa é um tiro.</p>
+      <div class="hero redesign-hero">
+        <div class="hero-copy">
+          <div class="brand-kicker"><span></span> ARCADE DE DIGITAÇÃO <span></span></div>
+          <p class="hero-overline">TOQUE CERTO <span>·</span> TREINE. COMPITA. EVOLUA.</p>
+          <h1 class="hero-title">Cada tecla<br><em>é uma jogada.</em></h1>
+          <p class="hero-subtitle">Treine sua digitação, aumente sua velocidade e desafie seus limites. Transforme cada palavra em uma conquista.</p>
+          <div class="hero-actions"><button class="btn primary hero-cta" type="button" data-mode="1"><span class="cta-icon">↗</span> Começar a digitar</button><span class="hero-note"><i></i> 4 modos para evoluir</span></div>
+        </div>
+        <div class="hero-keyboard" aria-label="Ilustração de teclado com teclas iluminadas">
+          <div class="keyboard-glow"></div><div class="keyboard-topline"><span>READY TO TYPE</span><b>01</b></div>
+          <div class="key-row"><i>Q</i><i>W</i><i class="lit">E</i><i>R</i><i>T</i><i>Y</i><i>U</i><i>I</i><i>O</i><i>P</i></div>
+          <div class="key-row indent"><i>A</i><i>S</i><i class="lit cyan">D</i><i>F</i><i>G</i><i>H</i><i>J</i><i>K</i><i>L</i></div>
+          <div class="key-row indent-wide"><i>Z</i><i>X</i><i>C</i><i class="lit pink">V</i><i>B</i><i>N</i><i>M</i><i>,</i><i>.</i></div>
+          <div class="key-row space-row"><i></i><i class="space"></i><i></i></div>
+          <div class="keyboard-caption"><span><b>12</b> teclas por sequência</span><span><b>∞</b> possibilidades</span></div>
+        </div>
       </div>
+      <div class="section-heading"><div><span class="eyebrow">ESCOLHA SEU DESAFIO</span><h2>Como você quer jogar?</h2></div><span class="section-count">01 <i>/ 04</i></span></div>
       <div class="modes">
         <button class="mode" type="button" data-mode="1">
           <span class="legend" aria-hidden="true">1</span>
           <span class="mode-icon icon-free" aria-hidden="true"><span></span><span></span><span></span></span>
           <span class="mode-t">Livre</span>
           <span class="mode-d">Escolha um dos 10 textos e digite no seu ritmo. Sem limite de tempo.</span>
-          <span class="meta">Textos do fácil ao difícil</span>
+          <span class="meta"><b>∞</b> Ritmo livre <i class="mode-arrow">↗</i></span>
         </button>
         <button class="mode" type="button" data-mode="2">
           <span class="legend" aria-hidden="true">2</span>
           <span class="mode-icon icon-clock" aria-hidden="true"><i></i></span>
           <span class="mode-t">Contra o relógio</span>
           <span class="mode-d">Você define o tempo e digita o máximo que conseguir com precisão.</span>
-          <span class="meta">10 textos, de 30 segundos a 10 minutos</span>
+          <span class="meta"><b>◷</b> Escolha o tempo <i class="mode-arrow">↗</i></span>
         </button>
         <button class="mode online" type="button" data-mode="4">
           <span class="legend" aria-hidden="true">4</span>
           <span class="mode-icon icon-online" aria-hidden="true"><i></i><i></i></span>
           <span class="mode-t">Duelo online</span>
           <span class="mode-d">Crie uma sala ou entre com um código. Os dois digitam a mesma missão e vence quem terminar primeiro.</span>
-          <span class="meta">2 jogadores · tempo real</span>
+          <span class="meta"><b class="live-dot"></b> 2 jogadores · tempo real <i class="mode-arrow">↗</i></span>
         </button>
         <button class="mode battle" type="button" data-mode="3">
           <span class="legend" aria-hidden="true">3</span>
           <span class="mode-icon icon-battle" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
           <span class="mode-t">Batalha</span>
           <span class="mode-d">Escolha Fácil (3 min), Médio (2 min) ou Difícil (1 min). Cada tecla certa dispara; erros aproximam os invasores e descontam tempo nos modos Médio e Difícil.</span>
-          <span class="meta" id="battle-meta">5 fases e um chefão</span>
+          <span class="meta" id="battle-meta"><b>✦</b> 5 fases e um chefão <i class="mode-arrow">↗</i></span>
         </button>
       </div>
       <section class="global-ranking" aria-labelledby="ranking-title">
