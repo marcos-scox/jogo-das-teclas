@@ -126,9 +126,9 @@ const Store = {
 };
 Store.load();
 
-function sameChar(a, b){
+function sameChar(a, b, accentsRequired=true){
   if(a === b) return true;
-  if(!Store.data.prefs.accents) return strip(a) === strip(b);
+  if(!accentsRequired) return strip(a) === strip(b);
   return false;
 }
 
@@ -230,7 +230,7 @@ class Typer{
     if(this.opts.recordInputs) this.inputLog.push(ch);
     if(!this.started){ this.started = true; this.t0 = performance.now(); if(this.opts.onStart) this.opts.onStart(); }
     const exp = this.chars[this.pos];
-    const ok = sameChar(ch, exp);
+    const ok = sameChar(ch, exp, this.opts.accents !== false);
     const span = this.spans[this.pos];
     this.keys++;
     if(!ok){ this.wrongKeys++; this.misses.set(exp, (this.misses.get(exp) || 0) + 1); }
@@ -262,7 +262,7 @@ class Typer{
     const rm = () => {
       this.pos--;
       const ch = this.typed.pop();
-      if(sameChar(ch, this.chars[this.pos])) this.correct--;
+      if(sameChar(ch, this.chars[this.pos], this.opts.accents !== false)) this.correct--;
       this.spans[this.pos].classList.remove('ok', 'bad');
     };
     if(word){
@@ -574,7 +574,7 @@ const Online = {
   player(slot){return(this.state?.players||[]).find(p=>Number(p.slot)===Number(slot));},
   renderRoom(silent=false){const a=this.player(1),b=this.player(2);if(!silent||!$('#online-room')||this.state.status==='waiting')this.panel.innerHTML=`<div class="online-card" id="online-room"><div class="online-card-head"><div><span class="section-kicker">SALA <b class="room-code">${esc(this.state.code)}</b></span><h2>${this.state.status==='waiting'?'Aguardando o adversário':'Prepare os dedos'}</h2><p>${this.state.status==='waiting'?'Compartilhe o código abaixo e marque pronto quando o outro jogador entrar.':'Os dois jogadores estão na mesma missão.'}</p></div><button class="ghost" id="online-copy" type="button">Copiar código</button></div><div class="duel-players"><div class="duel-player"><strong>${esc(a?.player_name||'Você')}</strong><span>${a?.ready?'Pronto':'Aguardando'}</span><i style="width:${Math.min(this.state.text.length,a?.progress||0)/this.state.text.length*100}%"></i></div><div class="duel-vs">VS</div><div class="duel-player"><strong>${esc(b?.player_name||'Convide alguém')}</strong><span>${b?.ready?'Pronto':(b?'Aguardando':'Vaga livre')}</span><i style="width:${Math.min(this.state.text.length,b?.progress||0)/this.state.text.length*100}%"></i></div></div><div class="online-actions"><button class="btn primary" id="online-ready" type="button" disabled>${this.state.status==='waiting'?(b?'Preparando a largada…':'Aguardando o segundo jogador'):'Largada sincronizada'}</button><button class="btn" id="online-leave" type="button">Sair</button></div><p class="online-status" id="online-status">${this.state.status==='waiting'?(b?'Quando os dois estiverem prontos, a contagem começa.':'Aguardando o segundo jogador…'):'A partida vai começar!'}</p></div>`;if($('#online-copy'))$('#online-copy').onclick=()=>navigator.clipboard?.writeText(this.state.code);if($('#online-ready'))$('#online-ready').onclick=()=>this.ready();if($('#online-leave'))$('#online-leave').onclick=()=>this.open();},
   async ready(){if(!this.player(2))return;try{const r=await this.api('room-ready',{code:this.state.code,token:this.token,ready:true});this.state=r.state||r;this.renderRoom();}catch(e){this.renderRoom(e.message);}},
-  beginRace(){if(this.started||this.state.status==='finished')return;this.started=true;this.canType=false;this.stopPollOnly();this.panel.innerHTML=`<div class="online-card online-race" id="online-race"><div class="race-head"><div><span class="section-kicker">DUELO EM ANDAMENTO</span><h2>${esc(this.player(1)?.player_name||'Jogador 1')} <span>vs</span> ${esc(this.player(2)?.player_name||'Jogador 2')}</h2></div><strong id="online-count">3</strong></div><div class="duel-progress"><div><span>Você</span><i id="online-you-bar"></i></div><div><span>Adversário</span><i id="online-opp-bar"></i></div></div><div class="tx-box" id="online-text-box"><div class="tx-view" id="online-text"></div></div><p class="online-status" id="online-status">A contagem usa o mesmo relógio para os dois jogadores…</p></div>`;this.typer=new Typer($('#online-text'),this.state.text,{strict:true,recordInputs:true,onCorrect:()=>this.push(false),onWrong:()=>this.push(false),onDone:()=>this.push(true)});placeTrap($('#online-text-box'));const startAt=Date.parse(this.state.startedAt);const tick=()=>{const left=startAt-Date.now(),n=Math.ceil(left/1000);if($('#online-count'))$('#online-count').textContent=left>0?String(Math.max(1,n)):'VAI!';if(left<=0){this.canType=true;focusTrap();this.poller=setInterval(()=>this.refreshRace(),700);return;}setTimeout(tick,100);};tick();},
+  beginRace(){if(this.started||this.state.status==='finished')return;this.started=true;this.canType=false;this.stopPollOnly();this.panel.innerHTML=`<div class="online-card online-race" id="online-race"><div class="race-head"><div><span class="section-kicker">DUELO EM ANDAMENTO</span><h2>${esc(this.player(1)?.player_name||'Jogador 1')} <span>vs</span> ${esc(this.player(2)?.player_name||'Jogador 2')}</h2></div><strong id="online-count">3</strong></div><div class="duel-progress"><div><span>Você</span><i id="online-you-bar"></i></div><div><span>Adversário</span><i id="online-opp-bar"></i></div></div><div class="tx-box" id="online-text-box"><div class="tx-view" id="online-text"></div></div><p class="online-status" id="online-status">A contagem usa o mesmo relógio para os dois jogadores…</p></div>`;this.typer=new Typer($('#online-text'),this.state.text,{strict:true,accents:true,recordInputs:true,onCorrect:()=>this.push(false),onWrong:()=>this.push(false),onDone:()=>this.push(true)});placeTrap($('#online-text-box'));const startAt=Date.parse(this.state.startedAt);const tick=()=>{const left=startAt-Date.now(),n=Math.ceil(left/1000);if($('#online-count'))$('#online-count').textContent=left>0?String(Math.max(1,n)):'VAI!';if(left<=0){this.canType=true;focusTrap();this.poller=setInterval(()=>this.refreshRace(),700);return;}setTimeout(tick,100);};tick();},
   async push(done){if(!this.typer||this.finished||!this.canType)return;if(!done){if(this.pushBusy){this.pushQueued=true;return;}if(this.pushTimer)return;this.pushTimer=setTimeout(()=>{this.pushTimer=0;this.sendProgress(false);},250);return;}await this.sendProgress(true);},
   async sendProgress(done){if(!this.typer||this.finished)return;if(this.pushBusy){this.pushQueued=true;return;}this.pushBusy=true;const payload={code:this.state.code,token:this.token,progress:this.typer.pos,correct:this.typer.correct,mistakes:this.typer.wrongKeys};try{const r=await this.api(done?'room-finish':'room-progress',payload);this.state=r.state||r;if(done){this.localFinished=true;if(this.state.status==='finished')this.finishScreen();else if($('#online-status'))$('#online-status').textContent='Você terminou! Aguardando o outro jogador…';} }catch(e){if($('#online-status'))$('#online-status').textContent=e.message;}finally{this.pushBusy=false;if(this.pushQueued&&!this.finished){this.pushQueued=false;this.push(false);}}},
   async refreshRace(){if(!this.state||!this.token)return;try{const r=await this.api('room-state',{code:this.state.code,token:this.token});this.state=r.state||r;const me=this.player(this.slot),opp=this.player(this.slot===1?2:1),total=this.state.text.length,y=$('#online-you-bar'),o=$('#online-opp-bar');if(y)y.style.width=Math.round((me?.progress||0)/total*100)+'%';if(o)o.style.width=Math.round((opp?.progress||0)/total*100)+'%';if(me?.finished_at&&this.state.status!=='finished'&&$('#online-status'))$('#online-status').textContent='Você terminou! Aguardando o outro jogador…';if(this.state.status==='finished')this.finishScreen();}catch(e){}},
@@ -710,7 +710,7 @@ function startSession(mode, idx){
     : 'O tempo começa na primeira tecla. <kbd>Backspace</kbd> corrige, <kbd>Ctrl</kbd> + <kbd>Backspace</kbd> apaga a palavra inteira. <kbd>Esc</kbd> recomeça.';
   show('type');
   placeTrap($('#ty-box'));
-  session.typer = new Typer($('#ty-text'), text, {strict:false, onStart:startTicker, onUpdate:updStats, onDone:endSession});
+  session.typer = new Typer($('#ty-text'), text, {strict:false, accents:Store.data.prefs.accents, onStart:startTicker, onUpdate:updStats, onDone:endSession});
   updStats();
   focusTrap();
   $('#ty-box').classList.toggle('blurred', document.activeElement !== trap);
@@ -914,7 +914,7 @@ function enterPhase(i){
   G.queue = [];
   if(P.enemy === 'boss') G.queue = [len];
   else { let left = len; while(left > 0){ const h = Math.min(P.hp, left); G.queue.push(h); left -= h; } }
-  G.typer = new Typer($('#g-text'), P.text, {strict:true, recordInputs:true, onCorrect:gCorrect, onWrong:gWrong});
+  G.typer = new Typer($('#g-text'), P.text, {strict:true, accents:true, recordInputs:true, onCorrect:gCorrect, onWrong:gWrong});
   G.typer.merged = false;
   gFill();
   G.state = 'intro';
