@@ -302,8 +302,9 @@ function flush(){
 }
 trap.addEventListener('compositionstart', () => { composing = true; });
 trap.addEventListener('compositionend', () => { composing = false; flush(); });
-trap.addEventListener('input', e => { if(composing || e.isComposing) return; flush(); });
+trap.addEventListener('input', e => { if(view === 'online') { trap.value = ''; return; } if(composing || e.isComposing) return; flush(); });
 trap.addEventListener('keydown', e => {
+  if(view === 'online') { e.preventDefault(); return; }
   if(e.isComposing || composing) return;
   if(e.key === 'Backspace'){ e.preventDefault(); routeBack(e.ctrlKey || e.altKey || e.metaKey); }
   else if(e.key === 'Enter'){ e.preventDefault(); if(view === 'game' && G.state === 'play') routeChar('\n'); else if(view === 'online' && Online.canType) routeChar('\n'); }
@@ -315,8 +316,9 @@ trap.addEventListener('blur', () => {
 });
 window.addEventListener('keydown', e => {
   if(view !== 'online' || !Online.canType || !Online.typer || e.isComposing || composing) return;
-  if(document.activeElement === trap) return;
-  if(e.key === 'Backspace' || e.key === 'Enter' || e.key.length !== 1) return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  if(e.key === 'Enter') { e.preventDefault(); routeChar('\n'); return; }
+  if(e.key.length !== 1) return;
   e.preventDefault();
   routeChar(e.key);
 }, true);
