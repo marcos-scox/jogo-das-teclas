@@ -502,3 +502,9 @@ body{background:var(--new-bg);background-image:radial-gradient(ellipse at 75% 8%
 @media(max-width:980px){.redesign-hero{grid-template-columns:1fr;gap:34px}.hero-keyboard{max-width:620px;width:100%;justify-self:center}.modes{grid-template-columns:repeat(2,minmax(0,1fr))}.mode{min-height:215px}}
 @media(max-width:560px){.redesign-hero{padding-top:34px}.hero-title{font-size:clamp(3rem,15vw,4.3rem)}.hero-subtitle{font-size:.98rem}.hero-keyboard{padding:18px 13px;border-radius:18px;transform:none}.key-row{gap:4px}.key-row.indent{padding-left:10px}.key-row.indent-wide{padding-left:20px}.key-row i{border-radius:5px;box-shadow:0 3px 0 #080c16}.keyboard-caption{font-size:.62rem}.modes{grid-template-columns:1fr}.mode{min-height:0;padding-top:58px}.section-heading{align-items:start}.section-count{padding-top:4px}}
 @media(prefers-reduced-motion:reduce){.hero-keyboard,.mode,.key-row i{transform:none!important;transition:none!important}}
+
+/* resultados em tempo real do duelo */
+.result-medal{display:grid;place-items:center;width:72px;height:72px;margin:18px auto 8px;border:1px solid rgba(167,139,250,.5);border-radius:22px;background:linear-gradient(145deg,#9b7cff,#5b36c8);box-shadow:0 10px 28px rgba(124,75,230,.28);color:#fff;font:800 1.5rem var(--mono)}
+.online-provisional{border-color:rgba(34,211,238,.45);box-shadow:0 20px 60px rgba(34,211,238,.12),inset 0 1px 0 rgba(255,255,255,.06)}
+.online-provisional .result-medal{border-color:rgba(34,211,238,.62);background:linear-gradient(145deg,#39d9d0,#147a96);box-shadow:0 10px 30px rgba(34,211,238,.25)}
+.online-provisional h2,.online-result h2{letter-spacing:-.045em}
