@@ -84,6 +84,6 @@ Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/g
 Após completar três fases sem erros (acumuladas, não necessariamente consecutivas), o jogador recebe um sexto ponto de defesa para as fases restantes daquela campanha. A dificuldade é escolhida antes de começar e permanece fixa até voltar ao menu principal.
 
 ## Duelo online
-O modo online oferece **Corrida** e **Duelo das Teclas**: em ambos, duas pessoas entram na mesma sala e digitam a mesma missão, mas no Duelo das Teclas há personagens, barras de vida e uma arena ilustrada. A arena usa o cenário enviado pelo usuário e dois pistoleiros; cada personagem alterna entre três poses. O modo normal de Corrida continua sem essa arena western.
+O modo online oferece **Corrida** e **Duelo das Teclas**: em ambos, duas pessoas entram na mesma sala e digitam a mesma missão, mas no Duelo das Teclas há personagens, barras de vida e uma arena ilustrada. A arena usa o cenário western enviado pelo usuário, com um robô xerife contra um alien fora da lei; os dois personagens se movimentam durante a disputa. O modo normal de Corrida continua sem essa arena.
 
-As poses e o cenário otimizados ficam em `assets/img/duel/`. As salas, tokens e sincronização são atendidos pela Edge Function `online-duel`, com dados em `online_rooms` e `online_room_players`, protegidos por RLS. O endpoint temporário `duel-api` foi aposentado.
+Os sprites do robô, do alien e o cenário ficam em `assets/img/duel/`. As salas, tokens e sincronização são atendidos pela Edge Function `online-duel`, com dados em `online_rooms` e `online_room_players`, protegidos por RLS. O endpoint temporário `duel-api` foi aposentado.
