@@ -45,6 +45,9 @@ O backend em uso é o projeto `jogo-das-teclas-ranking`, hospedado na região S�
 - Migração inicial do banco, tabelas e políticas RLS: [`supabase/migrations/20261030_global_leaderboard.sql`](supabase/migrations/20261030_global_leaderboard.sql)
 - Migração aditiva de pontuação competitiva e tempo ativo: [`supabase/migrations/20261103_competitive_ranking.sql`](supabase/migrations/20261103_competitive_ranking.sql)
 - Função de sessão e validação: [`supabase/functions/ranking-api/index.ts`](supabase/functions/ranking-api/index.ts)
+- Função de salas online: [`supabase/functions/online-duel/index.ts`](supabase/functions/online-duel/index.ts)
+- Migração do modo online: [`supabase/migrations/20261105_online_duels.sql`](supabase/migrations/20261105_online_duels.sql)
+- Limpeza da tabela duplicada de teste: [`supabase/migrations/20261105_cleanup_duplicate_duel_rooms.sql`](supabase/migrations/20261105_cleanup_duplicate_duel_rooms.sql)
 - Configuração pública do cliente: [`assets/js/supabase-config.js`](assets/js/supabase-config.js)
 
 Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/guides/getting-started/api-keys), [segurança de Edge Functions](https://supabase.com/docs/guides/functions/auth) e [Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security).
@@ -57,14 +60,19 @@ Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/g
 ├── README.md
 ├── assets/
 │   ├── css/styles.css
+│   ├── img/duel/ (cenário e poses dos dois personagens)
 │   └── js/
 │       ├── app.js
 │       └── supabase-config.js
 └── supabase/
-    ├── functions/ranking-api/index.ts
+    ├── functions/
+    │   ├── online-duel/index.ts
+    │   └── ranking-api/index.ts
     └── migrations/
         ├── 20261030_global_leaderboard.sql
-        └── 20261103_competitive_ranking.sql
+        ├── 20261103_competitive_ranking.sql
+        ├── 20261105_online_duels.sql
+        └── 20261105_cleanup_duplicate_duel_rooms.sql
 ```
 
 ## Dificuldades da batalha
@@ -76,6 +84,6 @@ Para referências oficiais: [chaves da API Supabase](https://supabase.com/docs/g
 Após completar três fases sem erros (acumuladas, não necessariamente consecutivas), o jogador recebe um sexto ponto de defesa para as fases restantes daquela campanha. A dificuldade é escolhida antes de começar e permanece fixa até voltar ao menu principal.
 
 ## Duelo online
-O modo Duelo online cria salas temporárias com um código de seis caracteres. O anfitrião escolhe a dificuldade, compartilha o código, e o segundo jogador entra pelo mesmo menu. Depois que os dois marcam **Estou pronto**, uma contagem regressiva sincronizada começa e ambos digitam a mesma missão; o primeiro a concluir vence. O progresso do adversário é atualizado por polling seguro na Edge Function, enquanto tokens temporários protegem a sala e a tabela privada não fica exposta ao navegador.
+O modo online oferece **Corrida** e **Duelo das Teclas**: em ambos, duas pessoas entram na mesma sala e digitam a mesma missão, mas no Duelo das Teclas há personagens, barras de vida e uma arena ilustrada. A arena usa o cenário enviado pelo usuário e dois pistoleiros; cada personagem alterna entre três poses. O modo normal de Corrida continua sem essa arena western.
 
-A infraestrutura está em `supabase/migrations/20261105_online_duels.sql`; os endpoints `room-create`, `room-join`, `room-state`, `room-ready`, `room-progress` e `room-finish` ficam na função `ranking-api`.
+As poses e o cenário otimizados ficam em `assets/img/duel/`. As salas, tokens e sincronização são atendidos pela Edge Function `online-duel`, com dados em `online_rooms` e `online_room_players`, protegidos por RLS. O endpoint temporário `duel-api` foi aposentado.
