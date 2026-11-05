@@ -57,7 +57,8 @@ Deno.serve(async req => {
     const now = new Date(); const elapsed = room.started_at ? Math.max(0, Math.round((now.getTime() - Date.parse(room.started_at)) / 10) / 100) : null;
     await db.from("online_room_players").update({ progress, correct, mistakes, last_seen_at: now.toISOString(), ...(action === "room-finish" ? { finished_at: now.toISOString(), elapsed_seconds: elapsed } : {}) }).eq("id", player.id);
     if (room.status === "countdown" && room.started_at && Date.parse(room.started_at) <= Date.now()) await db.from("online_rooms").update({ status: "racing" }).eq("id", room.id).eq("status", "countdown");
-    if (action === "room-finish") { await db.from("online_rooms").update({ winner_slot: player.slot }).eq("id", room.id).eq("status", "racing").is("winner_slot", null); const { data: done } = await db.from("online_room_players").select("finished_at").eq("room_id", room.id); if (done?.length === 2 && done.every(p => p.finished_at)) await db.from("online_rooms").update({ status: "finished" }).eq("id", room.id).eq("status", "racing"); }
+    const { data: freshBeforeWinner } = await db.from("online_rooms").select("*").eq("id", room.id).single();
+    if (action === "room-finish") { await db.from("online_rooms").update({ winner_slot: player.slot }).eq("id", room.id).in("status", ["countdown", "racing"]).is("winner_slot", null); const { data: done } = await db.from("online_room_players").select("finished_at").eq("room_id", room.id); if (done?.length === 2 && done.every(p => p.finished_at)) await db.from("online_rooms").update({ status: "finished" }).eq("id", room.id).in("status", ["countdown", "racing"]); }
     const { data: freshRoom } = await db.from("online_rooms").select("*").eq("id", room.id).single();
     return out(req, { state: await state(freshRoom || room) });
   }
