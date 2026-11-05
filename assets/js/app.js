@@ -1,9 +1,8 @@
 
 'use strict';
 (function(){
-const DUEL_APP_SCRIPT = [...document.scripts].find(script => script.src.includes('/assets/js/app.js'));
-const DUEL_ASSET_BASE = new URL('../img/duel/', DUEL_APP_SCRIPT?.src || document.baseURI).href;
-const DUEL_ASSET_VERSION = 'duel-robot-alien-2';
+const DUEL_ASSET_BASE = 'https://marcos-scox.github.io/jogo-das-teclas/assets/img/duel/';
+const DUEL_ASSET_VERSION = 'duel-robot-alien-3';
 
 /* ===================== TEXTOS ===================== */
 const FREE = [
