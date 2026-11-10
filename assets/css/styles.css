@@ -560,3 +560,19 @@ body{background:var(--new-bg);background-image:radial-gradient(ellipse at 75% 8%
   .ov-hint{margin-top:8px !important}
   .ov-extra{margin-top:6px}
 }
+
+/* Correção dos sprites da Corrida e do cenário do Duelo das Teclas. */
+.online-race.keys-match{position:relative;isolation:isolate;background-color:#21160e;background-image:linear-gradient(180deg,rgba(7,10,23,.16),rgba(7,10,23,.48)),var(--keys-arena-bg,url('../img/duel/western-street-background.webp'));background-position:center;background-size:cover;background-repeat:no-repeat;border-color:rgba(139,92,246,.58);box-shadow:0 28px 90px rgba(0,0,0,.5),inset 0 0 90px rgba(5,8,20,.32)}
+.keys-match::before{background:linear-gradient(180deg,rgba(7,10,23,.04),rgba(7,10,23,.42));inset:0;width:auto;height:auto;right:0;top:0;border-radius:inherit}
+.keys-match .race-head,.keys-match .duel-progress,.keys-match .tx-box,.keys-match .online-status{position:relative;z-index:2}
+.keys-arena .fighter{position:relative;min-height:220px;justify-content:end;overflow:visible}
+.fighter-poses{position:relative;display:block;width:clamp(140px,18vw,190px);height:200px;margin:0 auto;animation:fighter-idle 1.2s ease-in-out infinite}
+.fighter-sprite{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 14px 12px rgba(0,0,0,.46));opacity:1;transform-origin:center bottom;animation:duelist-ready 1.45s ease-in-out infinite}
+.fighter-opp .fighter-poses{animation-delay:-.6s}.fighter-opp .fighter-sprite{animation-delay:-.7s}
+@keyframes duelist-ready{0%,100%{transform:translateY(0) rotate(-1.3deg) scale(1)}50%{transform:translateY(-7px) rotate(1.5deg) scale(1.025)}}
+@media(max-width:600px){.keys-arena .fighter{min-height:175px;padding:6px}.fighter-poses{width:clamp(118px,34vw,145px);height:170px}}
+@media(prefers-reduced-motion:reduce){.fighter-poses,.fighter-sprite{animation:none}}
+.race-avatar-window{position:relative;width:140px;height:155px;flex:none;background-image:var(--race-sprite);background-repeat:no-repeat;background-size:400% 100%;background-position:0 0;image-rendering:pixelated;animation:race-avatar-cycle .9s steps(3,end) infinite}
+@keyframes race-avatar-cycle{to{background-position:100% 0}}
+@media(max-width:600px){.race-avatar-window{width:clamp(76px,24vw,112px);height:clamp(84px,26.5vw,124px)}}
+@media(prefers-reduced-motion:reduce){.race-avatar-window{animation:none;background-position:0 0}}
