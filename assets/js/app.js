@@ -1283,16 +1283,16 @@ function overlay(kind){
   const P = phaseFor(G.idx), n = G.idx + 1, total = PHASES.length;
   let h = '<div class="ov-card" role="dialog" aria-live="polite">';
   if(kind === 'difficulty'){
-    h += '<p class="ov-step">Antes de começar a campanha</p><h3>Escolha a dificuldade</h3><p>A escolha fica fixa nesta partida e só muda quando você voltar ao menu principal.</p>';
+    h += '<p class="ov-step">Antes de começar a campanha</p><h3>Escolha a dificuldade</h3><p>A dificuldade fica fixa até voltar ao menu principal.</p>';
     let savedName = '';
     try{ savedName = localStorage.getItem('toque-certo:ranking-name') || ''; }catch(e){}
-    h += '<label class="rank-name-field" for="rank-player-name">Seu nome no ranking<input id="rank-player-name" type="text" maxlength="24" autocomplete="nickname" placeholder="Ex.: Ana" value="' + esc(savedName) + '"><span class="rank-name-help" id="rank-name-help">Será enviado automaticamente quando você vencer as 5 fases.</span></label><p class="rank-name-error" id="rank-name-error" aria-live="polite"></p>';
+    h += '<label class="rank-name-field" for="rank-player-name">Seu nome no ranking<input id="rank-player-name" type="text" maxlength="24" autocomplete="nickname" placeholder="Ex.: Ana" value="' + esc(savedName) + '"><span class="rank-name-help" id="rank-name-help">Enviado automaticamente ao vencer as 5 fases.</span></label><p class="rank-name-error" id="rank-name-error" aria-live="polite"></p>';
     h += '<div class="difficulty-options">';
-    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-easy"><strong>Fácil · 3 minutos</strong><span>Missões só com letras, espaços e acentos; sem pontuação ou números. Sem penalidade de tempo por erro.</span></button>';
-    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Missões com letras, acentos, números e sinais de pontuação. Cada erro desconta 5 segundos.</span></button>';
-    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-hard"><strong>Difícil · 1 minuto</strong><span>Erro: −5 s. Tecla certa: +1 s.</span></button>';
-    h += '</div><p class="ov-hint">Complete 3 fases sem erro (acumuladas, não precisam ser seguidas) para ganhar um ponto de defesa extra nas fases restantes.</p>';
-    h += '<p class="ov-hint">O ranking dá bônus por rapidez e precisão e até 5.000 pontos pelo tempo total da campanha. O tempo ativo soma todas as tentativas nas fases; pausas, menus e transições não contam. O servidor valida esse tempo com tolerância de rede limitada. Ao repetir uma fase, o limite regressivo reinicia.</p>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-easy"><strong>Fácil · 3 minutos</strong><span>Só letras, espaços e acentos. Erros não tiram tempo.</span></button>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Inclui números e pontuação. Erro: −5 s.</span></button>';
+    h += '<button class="btn difficulty-option" type="button" data-g="difficulty-hard"><strong>Difícil · 1 minuto</strong><span>Erro: −5 s; tecla certa: +1 s.</span></button>';
+    h += '</div><p class="ov-hint">3 fases sem erro (não consecutivas) liberam +1 defesa para o restante da campanha.</p>';
+    h += '<details class="ov-extra"><summary>Como funciona a pontuação e o tempo?</summary><p>O ranking dá bônus por rapidez e precisão e até 5.000 pontos pelo tempo total da campanha. O tempo ativo soma todas as tentativas nas fases; pausas, menus e transições não contam. O servidor valida esse tempo com tolerância de rede limitada. Ao repetir uma fase, o limite regressivo reinicia.</p></details>';
   }else if(kind === 'intro'){
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + '</p><h3>' + esc(P.name) + '</h3><p>' + esc(P.desc) + '</p>';
     const d = difficulty();

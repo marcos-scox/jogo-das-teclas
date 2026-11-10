@@ -215,6 +215,9 @@ kbd{font-family:var(--mono);font-size:.85em;padding:1px 6px;border-radius:5px;bo
 .ov-keys .pk-cap.wide{min-width:90px}
 .ov-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 .ov-hint{margin-top:12px !important;font-size:.86rem}
+.ov-extra{margin-top:8px;color:var(--muted);font-size:.86rem}
+.ov-extra summary{color:var(--accent);font-weight:600;cursor:pointer}
+.ov-extra p{margin-top:8px !important}
 .difficulty-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
 .difficulty-option{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:112px;text-align:left;white-space:normal}
 .difficulty-option strong{font-size:1rem}
@@ -529,8 +532,8 @@ body{background:var(--new-bg);background-image:radial-gradient(ellipse at 75% 8%
 .mode{padding-top:clamp(150px,15vw,190px);overflow:hidden}.mode-art{position:absolute;z-index:0;left:10px;right:10px;top:10px;width:calc(100% - 20px);height:clamp(120px,12vw,158px);object-fit:cover;object-position:center;border:1px solid rgba(255,255,255,.24);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.3);opacity:.9;transition:transform .2s ease,opacity .2s ease,filter .2s ease}.mode-art-battle{object-position:center 24%;}.mode:hover .mode-art{transform:scale(1.035);opacity:1;filter:saturate(1.08) brightness(1.06)}.mode .mode-t,.mode .mode-d,.mode .meta{position:relative;z-index:1}.mode .mode-t{font-size:1.35rem;text-shadow:0 2px 10px rgba(0,0,0,.55)}.mode .mode-d{font-size:.88rem}.mode .legend{z-index:2;text-shadow:0 1px 8px #000}@media(max-width:700px){.mode{padding-top:150px}.mode-art{height:130px}}
 
 /* correção responsiva do seletor de dificuldade da Batalha */
-.g-over{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;overflow-x:hidden}
-.ov-card{width:min(100%,540px);flex:0 0 auto;max-height:none;margin:auto;box-sizing:border-box;overflow-wrap:anywhere}
+.g-over{display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.ov-card{width:min(100%,540px);flex:0 1 auto;min-height:0;max-height:calc(100% - 16px);margin:auto;box-sizing:border-box;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;overflow-wrap:anywhere}
 .difficulty-options{width:100%;min-width:0}
 .difficulty-option{width:100%;min-width:0;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;word-break:normal;line-height:1.35}
 .difficulty-option strong,.difficulty-option span{max-width:100%;overflow-wrap:anywhere}
@@ -543,4 +546,17 @@ body{background:var(--new-bg);background-image:radial-gradient(ellipse at 75% 8%
   .difficulty-option{padding:11px 12px;min-height:0}
   .difficulty-option strong{font-size:.95rem;line-height:1.25}
   .difficulty-option span{font-size:.8rem;line-height:1.35}
+}
+@media(max-height:720px){
+  .g-over{padding:8px}
+  .ov-card{padding:14px 18px}
+  .ov-card h3{margin:2px 0 6px}
+  .ov-card p{margin-bottom:6px;line-height:1.32}
+  .rank-name-field{margin-top:8px}
+  .difficulty-options{gap:8px;margin-top:10px}
+  .difficulty-option{gap:4px;min-height:0;padding:9px 10px}
+  .difficulty-option strong{font-size:.9rem;line-height:1.15}
+  .difficulty-option span{font-size:.76rem;line-height:1.25}
+  .ov-hint{margin-top:8px !important}
+  .ov-extra{margin-top:6px}
 }
