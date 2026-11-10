@@ -527,3 +527,6 @@ body{background:var(--new-bg);background-image:radial-gradient(ellipse at 75% 8%
 
 /* artes dos modos de jogo */
 .mode{padding-top:clamp(150px,15vw,190px);overflow:hidden}.mode-art{position:absolute;z-index:0;left:10px;right:10px;top:10px;width:calc(100% - 20px);height:clamp(120px,12vw,158px);object-fit:cover;object-position:center;border:1px solid rgba(255,255,255,.24);border-radius:12px;box-shadow:0 8px 22px rgba(0,0,0,.3);opacity:.9;transition:transform .2s ease,opacity .2s ease,filter .2s ease}.mode-art-battle{object-position:center 24%;}.mode:hover .mode-art{transform:scale(1.035);opacity:1;filter:saturate(1.08) brightness(1.06)}.mode .mode-t,.mode .mode-d,.mode .meta{position:relative;z-index:1}.mode .mode-t{font-size:1.35rem;text-shadow:0 2px 10px rgba(0,0,0,.55)}.mode .mode-d{font-size:.88rem}.mode .legend{z-index:2;text-shadow:0 1px 8px #000}@media(max-width:700px){.mode{padding-top:150px}.mode-art{height:130px}}
+
+/* cartões visuais: somente arte */
+.mode{min-height:0;height:auto;padding:0;background:var(--key-top)}.mode-art{position:relative;left:auto;right:auto;top:auto;width:100%;height:auto;aspect-ratio:3 / 2;display:block;object-fit:cover;border:0;border-radius:15px;box-shadow:none;opacity:1}.mode-art-battle{object-position:center 24%}.mode:hover .mode-art{transform:scale(1.025)}
