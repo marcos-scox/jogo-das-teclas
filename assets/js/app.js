@@ -1292,7 +1292,6 @@ function overlay(kind){
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-medium"><strong>Médio · 2 minutos</strong><span>Inclui números e pontuação. Erro: −5 s.</span></button>';
     h += '<button class="btn difficulty-option" type="button" data-g="difficulty-hard"><strong>Difícil · 1 minuto</strong><span>Erro: −5 s; tecla certa: +1 s.</span></button>';
     h += '</div><p class="ov-hint">3 fases sem erro (não consecutivas) liberam +1 defesa para o restante da campanha.</p>';
-    h += '<details class="ov-extra"><summary>Como funciona a pontuação e o tempo?</summary><p>O ranking dá bônus por rapidez e precisão e até 5.000 pontos pelo tempo total da campanha. O tempo ativo soma todas as tentativas nas fases; pausas, menus e transições não contam. O servidor valida esse tempo com tolerância de rede limitada. Ao repetir uma fase, o limite regressivo reinicia.</p></details>';
   }else if(kind === 'intro'){
     h += '<p class="ov-step">Fase ' + n + ' de ' + total + '</p><h3>' + esc(P.name) + '</h3><p>' + esc(P.desc) + '</p>';
     const d = difficulty();

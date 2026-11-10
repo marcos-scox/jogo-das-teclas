@@ -90,15 +90,19 @@
     <!-- RANKING COMPLETO -->
     <section id="v-ranking" class="view" hidden>
       <div class="page-intro">
-        <span class="eyebrow">PLACAR DA COMUNIDADE</span>
-        <h1 class="page-title">Ranking Global</h1>
-        <p class="page-copy">Confira todas as campanhas concluídas, ordenadas pela pontuação final.</p>
+        <span class="eyebrow">PLACAR DA BATALHA</span>
+        <h1 class="page-title">Ranking da Batalha</h1>
+        <p class="page-copy">Campanhas concluídas no modo Batalha, ordenadas pela pontuação final.</p>
       </div>
       <section class="ranking-panel" aria-labelledby="full-ranking-title">
         <div class="ranking-heading">
           <div><h2 id="full-ranking-title">Classificação completa</h2><p>Resultados reais dos jogadores que venceram as cinco fases.</p></div>
           <button class="ranking-refresh" id="leaderboard-refresh" type="button">Atualizar</button>
         </div>
+        <aside class="ranking-explainer" aria-label="Como funciona o ranking da Batalha">
+          <strong>Como funciona</strong>
+          <p>A pontuação considera rapidez, precisão e bônus de até 5.000 pontos pelo tempo ativo total. Esse tempo soma todas as tentativas, mas não pausas, menus ou transições. Ao repetir uma fase, o cronômetro dela reinicia; o resultado é validado pelo servidor.</p>
+        </aside>
         <div class="ranking-tabs" role="tablist" aria-label="Filtrar ranking por dificuldade">
           <button class="ranking-tab easy active" type="button" role="tab" aria-selected="true" data-ranking-difficulty="easy"><i aria-hidden="true"></i>Fácil</button>
           <button class="ranking-tab medium" type="button" role="tab" aria-selected="false" data-ranking-difficulty="medium"><i aria-hidden="true"></i>Médio</button>

@@ -215,9 +215,6 @@ kbd{font-family:var(--mono);font-size:.85em;padding:1px 6px;border-radius:5px;bo
 .ov-keys .pk-cap.wide{min-width:90px}
 .ov-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 .ov-hint{margin-top:12px !important;font-size:.86rem}
-.ov-extra{margin-top:8px;color:var(--muted);font-size:.86rem}
-.ov-extra summary{color:var(--accent);font-weight:600;cursor:pointer}
-.ov-extra p{margin-top:8px !important}
 .difficulty-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
 .difficulty-option{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:112px;text-align:left;white-space:normal}
 .difficulty-option strong{font-size:1rem}
@@ -299,6 +296,9 @@ body{
 .ranking-heading{align-items:flex-start}
 .ranking-heading h2{margin:5px 0 0;font:700 clamp(1.35rem,2.5vw,1.7rem)/1.2 var(--display);letter-spacing:-.035em}
 .ranking-heading p{margin:7px 0 0;color:var(--muted);font-size:.91rem}
+.ranking-explainer{margin-top:16px;padding:14px 16px;border:1px solid rgba(154,131,255,.2);border-radius:13px;background:rgba(10,16,31,.52);color:var(--muted);font-size:.9rem;line-height:1.5;overflow-wrap:anywhere}
+.ranking-explainer strong{display:block;margin-bottom:4px;color:#E9E5FF}
+.ranking-explainer p{margin:0;max-width:78ch}
 .ranking-refresh,.ranking-open,.ranking-more{
   min-height:42px;padding:9px 14px;border:1px solid rgba(158,139,244,.26);border-radius:11px;
   background:rgba(156,131,255,.1);color:#D8CEFF;font:600 .9rem var(--ui);cursor:pointer;
